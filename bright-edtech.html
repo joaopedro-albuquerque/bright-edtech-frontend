@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bright - Plataforma de Estudo Inteligente</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #faf9f6; }
+        
+        .chart-container { 
+            position: relative; 
+            width: 100%; 
+            max-width: 600px; 
+            margin-left: auto; 
+            margin-right: auto; 
+            height: 350px; 
+            max-height: 400px; 
+        }
+
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .transition-transform { transition: transform 0.6s ease; }
+        
+        .flashcard.flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .tree-line {
+            border-left: 2px solid #e2e8f0;
+            margin-left: 12px;
+            padding-left: 12px;
+        }
+    </style>
+</head>
+<body class="text-gray-800 font-sans antialiased h-screen flex overflow-hidden">
+
+    <!-- Chosen Palette: Warm Minimalist (Background: #faf9f6, Primary: Indigo #4f46e5, Secondary: Emerald #10b981, Text: Gray-800) -->
+    <!-- Application Structure Plan: The SPA is structured as an interactive product prototype/dashboard. This approach was chosen to transform a raw list of startup ideas into a tangible, explorable experience. It uses a sidebar navigation to group related features (Overview, AI Organization, Study Tools, Community) allowing the user to understand the value proposition of 'Bright' feature by feature, simulating how the actual platform would feel. -->
+    <!-- Visualization & Content Choices: 
+         - Overview -> Compare Bright vs Traditional -> Radar Chart (Chart.js) -> Hover interaction -> Shows value leap without clutter.
+         - AI Structure -> Demonstrate Agent capability -> Interactive DOM manipulation -> Click to generate -> Simulates the core value proposition of automated organization.
+         - Study Tools -> Show active recall -> CSS 3D Flashcard -> Click to flip -> Provides a tangible example of study review.
+         - Community -> Show social aspect -> Mock feed layout -> Read-only display -> Grounds the 'Reddit style' idea in a visual format. 
+         Library/Method: Tailwind for layout, Vanilla JS for state, Chart.js for data. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col h-full shadow-sm z-10 flex-shrink-0 transition-all duration-300" id="sidebar">
+        <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-indigo-600 tracking-tight">💡 Bright</h1>
+            <button id="mobile-menu-close" class="md:hidden text-gray-500 text-xl">✕</button>
+        </div>
+        <nav class="flex-1 overflow-y-auto py-4">
+            <ul class="space-y-1 px-3" id="nav-menu">
+                <li>
+                    <button data-target="visao-geral" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg bg-indigo-50 text-indigo-700 font-medium transition-colors">
+                        <span class="text-xl">📊</span> Visão Geral
+                    </button>
+                </li>
+                <li>
+                    <button data-target="ia-organizacao" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                        <span class="text-xl">🤖</span> Agente IA & Organização
+                    </button>
+                </li>
+                <li>
+                    <button data-target="ferramentas" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                        <span class="text-xl">🧠</span> Ferramentas de Estudo
+                    </button>
+                </li>
+                <li>
+                    <button data-target="comunidade" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-left rounded-lg text-gray-600 hover:bg-gray-50 transition-colors">
+                        <span class="text-xl">👥</span> Comunidade & Social
+                    </button>
+                </li>
+            </ul>
+        </nav>
+        <div class="p-4 border-t border-gray-100">
+            <div class="flex items-center gap-3 px-4 py-2">
+                <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">A</div>
+                <div class="text-sm">
+                    <p class="font-medium text-gray-800">Aluno Teste</p>
+                    <p class="text-xs text-gray-500">Plano Pro</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="flex-1 h-full overflow-y-auto custom-scrollbar relative">
+        <button id="mobile-menu-open" class="md:hidden absolute top-4 left-4 z-20 bg-white p-2 rounded-md shadow text-xl">☰</button>
+
+        <div class="max-w-5xl mx-auto p-6 md:p-10 pb-24">
+            
+            <section id="visao-geral" class="content-section block animate-fade-in">
+                <header class="mb-10">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Potencializando o Estudo com a Bright</h2>
+                    <p class="text-lg text-gray-600 leading-relaxed">
+                        Esta seção apresenta a proposta de valor central da plataforma Bright. O objetivo é transformar o estudo tradicional, muitas vezes desorganizado e solitário, em uma experiência estruturada, inteligente e colaborativa. O gráfico abaixo ilustra a vantagem competitiva da Bright em áreas chave de aprendizado.
+                    </p>
+                </header>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <h3 class="text-xl font-semibold mb-4 text-center">Impacto Estimado na Rotina</h3>
+                        <div class="chart-container">
+                            <canvas id="valueChart"></canvas>
+                        </div>
+                        <p class="text-sm text-gray-500 text-center mt-4">Comparativo conceitual de eficiência de estudo.</p>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="p-5 bg-indigo-50 rounded-xl border border-indigo-100">
+                            <h4 class="font-bold text-indigo-800 text-lg mb-2 flex items-center gap-2"><span>🎯</span> O Problema</h4>
+                            <p class="text-gray-700">Estudantes perdem muito tempo organizando materiais, criando resumos manuais e muitas vezes estudam de forma isolada, diminuindo a retenção de conteúdo.</p>
+                        </div>
+                        <div class="p-5 bg-emerald-50 rounded-xl border border-emerald-100">
+                            <h4 class="font-bold text-emerald-800 text-lg mb-2 flex items-center gap-2"><span>✨</span> A Solução Bright</h4>
+                            <p class="text-gray-700">Uma plataforma unificada que utiliza IA para estruturar documentos automaticamente, gerar ferramentas de revisão ativa (flashcards) e conectar alunos através de um hub social gamificado.</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 text-center">
+                            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                                <p class="text-3xl font-black text-indigo-600 mb-1">+40%</p>
+                                <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">Retenção de Memória</p>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                                <p class="text-3xl font-black text-emerald-600 mb-1">-2h</p>
+                                <p class="text-xs text-gray-500 font-medium uppercase tracking-wide">Tempo de Organização/Semana</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="ia-organizacao" class="content-section hidden animate-fade-in">
+                <header class="mb-10">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Agente IA: Organização Automática</h2>
+                    <p class="text-lg text-gray-600 leading-relaxed">
+                        Aqui demonstramos a funcionalidade principal: a capacidade da IA de organizar o caos. Em vez de o aluno criar pastas manualmente, ele fornece um documento ou tema, e a Bright gera a estrutura hierárquica (estilo diretório) e áreas de estudo dedicadas. Teste o simulador abaixo.
+                    </p>
+                </header>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-6 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                        <h3 class="font-bold text-gray-800">Simulador de Estruturação via IA</h3>
+                        <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded font-bold">BETA</span>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="flex gap-4 mb-8">
+                            <input type="text" id="ai-input" placeholder="Ex: Material de Matemática, Biologia Celular..." class="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" value="Conteúdo completo de Matemática para o ENEM">
+                            <button id="btn-generate-ai" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition-colors flex items-center gap-2">
+                                <span>⚡</span> Estruturar
+                            </button>
+                        </div>
+
+                        <div id="ai-loading" class="hidden text-center py-10">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-200 border-t-indigo-600 mb-4"></div>
+                            <p class="text-gray-500 font-medium">O Agente está lendo o contexto e criando os diretórios...</p>
+                        </div>
+
+                        <div id="ai-result" class="hidden bg-gray-50 rounded-xl p-6 border border-gray-200">
+                            <p class="text-sm text-gray-500 mb-4 font-medium uppercase tracking-wider">Estrutura Criada com Sucesso</p>
+                            
+                            <div class="text-gray-800 font-medium space-y-2">
+                                <div class="flex items-center gap-2 cursor-pointer hover:text-indigo-600 transition-colors">
+                                    <span class="text-xl">📁</span> Matemática
+                                </div>
+                                
+                                <div class="tree-line space-y-2">
+                                    <div class="flex items-center gap-2 cursor-pointer hover:text-indigo-600 transition-colors">
+                                        <span class="text-xl">📁</span> Geometria Analítica
+                                    </div>
+                                    
+                                    <div class="tree-line space-y-2">
+                                        <div class="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 shadow-sm cursor-pointer hover:border-indigo-300 transition-colors">
+                                            <span class="text-xl text-red-500">📄</span> 
+                                            <span class="flex-1">Área de polígono.pdf</span>
+                                            <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">IA: Resumo Pronto</span>
+                                        </div>
+                                        <div class="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 shadow-sm cursor-pointer hover:border-indigo-300 transition-colors">
+                                            <span class="text-xl text-blue-500">📄</span> 
+                                            <span class="flex-1">Distância entre pontos.docx</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center gap-2 cursor-pointer hover:text-indigo-600 transition-colors mt-2">
+                                        <span class="text-xl">📁</span> Álgebra
+                                    </div>
+                                    <div class="tree-line space-y-2">
+                                        <div class="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 shadow-sm">
+                                            <span class="text-xl text-yellow-500">💡</span> 
+                                            <span class="flex-1 text-gray-500 italic">Área de estudos vazia. Arraste arquivos aqui.</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 pt-4 border-t border-gray-200 flex justify-end">
+                                <button class="text-sm font-medium text-indigo-600 hover:text-indigo-800">Ver Área de Estudos Completa →</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="ferramentas" class="content-section hidden animate-fade-in">
+                <header class="mb-10">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Ferramentas de Revisão e Calendário</h2>
+                    <p class="text-lg text-gray-600 leading-relaxed">
+                        Uma vez que o material está organizado, a Bright fornece ferramentas ativas. Os Flashcards são gerados automaticamente pela IA a partir dos documentos. O Calendário agenda revisões baseadas na curva de esquecimento.
+                    </p>
+                </header>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center">
+                        <div class="w-full flex justify-between items-center mb-6">
+                            <h3 class="font-bold text-gray-800 text-lg">Flashcards Interativos</h3>
+                            <span class="text-xs text-gray-500">Cartão 1/15</span>
+                        </div>
+                        
+                        <div class="perspective-1000 w-full max-w-sm h-64 mb-6 cursor-pointer group" id="demo-flashcard">
+                            <div class="flashcard relative w-full h-full transition-transform duration-700 transform-style-3d shadow-lg rounded-2xl">
+                                <div class="flashcard-inner absolute w-full h-full transform-style-3d transition-transform">
+                                    <div class="flashcard-front absolute w-full h-full backface-hidden bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 flex flex-col justify-center items-center text-white border border-indigo-400">
+                                        <p class="text-sm font-medium uppercase tracking-widest opacity-80 mb-4">Frente da Carta</p>
+                                        <p class="text-xl font-bold text-center">Qual é a fórmula para calcular a área de um triângulo na Geometria Analítica usando determinantes?</p>
+                                        <p class="text-xs mt-auto opacity-70 animate-pulse">Clique para virar</p>
+                                    </div>
+                                    
+                                    <div class="flashcard-back absolute w-full h-full backface-hidden rotate-y-180 bg-white rounded-2xl p-6 flex flex-col justify-center items-center border-2 border-indigo-100 text-gray-800">
+                                        <p class="text-sm font-medium uppercase tracking-widest text-indigo-400 mb-4">Verso (Resposta)</p>
+                                        <p class="text-2xl font-bold text-center mb-2">A = ½ |D|</p>
+                                        <p class="text-sm text-center text-gray-600">Onde D é o determinante formado pelas coordenadas dos vértices do triângulo.</p>
+                                        
+                                        <div class="mt-auto flex gap-2 w-full">
+                                            <button class="flex-1 py-2 bg-red-100 text-red-700 rounded font-medium text-sm hover:bg-red-200">Errei</button>
+                                            <button class="flex-1 py-2 bg-green-100 text-green-700 rounded font-medium text-sm hover:bg-green-200">Acertei</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="font-bold text-gray-800 text-lg">Calendário de Estudo</h3>
+                            <button class="text-indigo-600 text-sm font-medium">Sincronizar</button>
+                        </div>
+                        
+                        <div class="border rounded-xl overflow-hidden">
+                            <div class="bg-gray-50 p-3 text-center border-b font-semibold text-gray-700 flex justify-between items-center">
+                                <span>&lt;</span>
+                                <span>Março 2026</span>
+                                <span>&gt;</span>
+                            </div>
+                            <div class="grid grid-cols-7 gap-px bg-gray-200">
+                                <div class="bg-white p-2 text-center text-xs font-medium text-gray-500 h-8">D</div>
+                                <div class="bg-white p-2 text-center text-xs font-medium text-gray-500 h-8">S</div>
+                                <div class="bg-white p-2 text-center text-xs font-medium text-gray-500 h-8">T</div>
+                                <div class="bg-white p-2 text-center text-xs font-medium text-gray-500 h-8">Q</div>
+                                <div class="bg-white p-2 text-center text-xs font-medium text-gray-500 h-8">Q</div>
+                                <div class="bg-white p-2 text-center text-xs font-medium text-gray-500 h-8">S</div>
+                                <div class="bg-white p-2 text-center text-xs font-medium text-gray-500 h-8">S</div>
+                                
+                                <div class="bg-white p-2 min-h-[60px] opacity-50">1</div>
+                                <div class="bg-white p-2 min-h-[60px] opacity-50">2</div>
+                                <div class="bg-white p-2 min-h-[60px] relative font-bold text-indigo-600 ring-2 ring-indigo-600 ring-inset">
+                                    3
+                                    <div class="absolute bottom-1 left-1 right-1 bg-red-100 text-red-700 text-[10px] p-0.5 rounded text-center truncate">Revisão Geo.</div>
+                                </div>
+                                <div class="bg-white p-2 min-h-[60px]">4</div>
+                                <div class="bg-white p-2 min-h-[60px]">
+                                    5
+                                    <div class="absolute bottom-1 left-1 right-1 bg-green-100 text-green-700 text-[10px] p-0.5 rounded text-center truncate">Ler Álgebra</div>
+                                </div>
+                                <div class="bg-white p-2 min-h-[60px]">6</div>
+                                <div class="bg-white p-2 min-h-[60px]">7</div>
+                                <div class="bg-white p-2 min-h-[60px]">8</div>
+                                <div class="bg-white p-2 min-h-[60px] bg-gray-50 text-center flex items-center justify-center text-gray-400 text-xs col-span-6">... próximos dias ...</div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-4 text-center">IA agenda revisões automaticamente para otimizar a memória de longo prazo.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="comunidade" class="content-section hidden animate-fade-in">
+                <header class="mb-10">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Comunidade & Modo Multi-Usuário</h2>
+                    <p class="text-lg text-gray-600 leading-relaxed">
+                        A aprendizagem é social. Esta seção apresenta a aba de comunidade no estilo fórum (Reddit) para tirar dúvidas, além da capacidade de ter listas de amigos e compartilhar matérias ou documentos diretamente com colegas de classe.
+                    </p>
+                </header>
+
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="font-bold text-gray-800 text-lg flex items-center gap-2"><span>🔥</span> Feed da Comunidade</h3>
+                            <select class="bg-gray-50 border border-gray-200 text-gray-700 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 p-2">
+                                <option>Matemática Geral</option>
+                                <option>Dúvidas ENEM</option>
+                            </select>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="flex gap-4 p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
+                                <div class="flex flex-col items-center gap-1 text-gray-500">
+                                    <button class="hover:text-indigo-600 text-xl">▲</button>
+                                    <span class="font-bold text-gray-700 text-sm">142</span>
+                                    <button class="hover:text-red-600 text-xl">▼</button>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                                        <span class="font-bold text-indigo-600">b/Matematica</span>
+                                        <span>•</span>
+                                        <span>Postado por @joao_estuda há 2h</span>
+                                    </div>
+                                    <h4 class="font-bold text-gray-800 mb-2">Alguém tem um bom macete para decorar a tabela trigonométrica?</h4>
+                                    <p class="text-sm text-gray-600 line-clamp-2">Sempre confundo os valores de seno e cosseno dos ângulos notáveis na hora da prova. Alguém tem alguma dica ou flashcard deck pra compartilhar?</p>
+                                    <div class="flex gap-4 mt-3 text-xs text-gray-500 font-medium">
+                                        <span class="flex items-center gap-1"><span>💬</span> 24 Comentários</span>
+                                        <span class="flex items-center gap-1"><span>🔗</span> Compartilhar</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-4 p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
+                                <div class="flex flex-col items-center gap-1 text-gray-500">
+                                    <button class="hover:text-indigo-600 text-xl text-indigo-600">▲</button>
+                                    <span class="font-bold text-gray-700 text-sm">89</span>
+                                    <button class="hover:text-red-600 text-xl">▼</button>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                                        <span class="font-bold text-emerald-600">b/Materiais</span>
+                                        <span>•</span>
+                                        <span>Postado por @maria_bio há 5h</span>
+                                    </div>
+                                    <h4 class="font-bold text-gray-800 mb-2 text-indigo-700">📄 Compartilhando meu deck de Flashcards de Biologia Celular!</h4>
+                                    <p class="text-sm text-gray-600">Deu um trabalhão, mas a IA da Bright ajudou muito. São 150 cartas focadas nas organelas e suas funções.</p>
+                                    <button class="mt-2 text-xs bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full font-bold border border-indigo-100">Clonar para minha área</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="w-full md:w-64 flex flex-col gap-6">
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                            <h3 class="font-bold text-gray-800 text-sm uppercase tracking-wide mb-4">Amigos Online (3)</h3>
+                            <ul class="space-y-3">
+                                <li class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <div class="relative">
+                                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold text-blue-700">PL</div>
+                                            <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
+                                        </div>
+                                        <span class="text-sm font-medium text-gray-700">Pedro L.</span>
+                                    </div>
+                                    <button class="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded font-medium">Convidar</button>
+                                </li>
+                                <li class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <div class="relative">
+                                            <div class="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center text-xs font-bold text-pink-700">AM</div>
+                                            <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></div>
+                                        </div>
+                                        <span class="text-sm font-medium text-gray-700">Ana M.</span>
+                                    </div>
+                                    <span class="text-[10px] text-gray-400">Estudando Hist...</span>
+                                </li>
+                                <li class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <div class="relative">
+                                            <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center text-xs font-bold text-yellow-700">CR</div>
+                                            <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-yellow-400 border-2 border-white rounded-full"></div>
+                                        </div>
+                                        <span class="text-sm font-medium text-gray-700">Carlos R.</span>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-2xl shadow-sm p-6 text-white text-center">
+                            <h3 class="font-bold text-lg mb-2">Modo Multi-usuário</h3>
+                            <p class="text-sm text-indigo-100 mb-4">Crie uma sala de estudos virtual e compartilhe a tela de revisão de flashcards com seus amigos em tempo real.</p>
+                            <button class="w-full bg-white text-indigo-700 font-bold py-2 rounded-lg shadow hover:bg-gray-50 transition-colors">Criar Sala</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navButtons = document.querySelectorAll('.nav-btn');
+            const sections = document.querySelectorAll('.content-section');
+            const sidebar = document.getElementById('sidebar');
+            const mobileMenuOpen = document.getElementById('mobile-menu-open');
+            const mobileMenuClose = document.getElementById('mobile-menu-close');
+
+            function setActiveSection(targetId) {
+                sections.forEach(sec => {
+                    if (sec.id === targetId) {
+                        sec.classList.remove('hidden');
+                        setTimeout(() => sec.style.opacity = '1', 10);
+                    } else {
+                        sec.classList.add('hidden');
+                        sec.style.opacity = '0';
+                    }
+                });
+
+                navButtons.forEach(btn => {
+                    if (btn.dataset.target === targetId) {
+                        btn.classList.replace('text-gray-600', 'text-indigo-700');
+                        btn.classList.replace('hover:bg-gray-50', 'bg-indigo-50');
+                        btn.classList.add('font-medium');
+                    } else {
+                        btn.classList.replace('text-indigo-700', 'text-gray-600');
+                        btn.classList.replace('bg-indigo-50', 'hover:bg-gray-50');
+                        btn.classList.remove('font-medium');
+                    }
+                });
+                
+                if (window.innerWidth < 768) {
+                    sidebar.classList.add('-translate-x-full');
+                }
+            }
+
+            navButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    setActiveSection(btn.dataset.target);
+                });
+            });
+
+            mobileMenuOpen.addEventListener('click', () => {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('absolute');
+            });
+
+            mobileMenuClose.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+            });
+
+            if (window.innerWidth < 768) {
+                sidebar.classList.add('-translate-x-full');
+            }
+
+            const ctx = document.getElementById('valueChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Organização de Material', 'Revisão Ativa', 'Interação Social', 'Apoio de IA', 'Acompanhamento (Calendário)'],
+                    datasets: [{
+                        label: 'Método Tradicional',
+                        data: [40, 30, 20, 10, 50],
+                        backgroundColor: 'rgba(156, 163, 175, 0.2)',
+                        borderColor: 'rgba(156, 163, 175, 1)',
+                        pointBackgroundColor: 'rgba(156, 163, 175, 1)',
+                        borderWidth: 2
+                    }, {
+                        label: 'Plataforma Bright',
+                        data: [95, 90, 85, 100, 95],
+                        backgroundColor: 'rgba(79, 70, 229, 0.2)',
+                        borderColor: 'rgba(79, 70, 229, 1)',
+                        pointBackgroundColor: 'rgba(79, 70, 229, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(0, 0, 0, 0.05)' },
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                            pointLabels: {
+                                font: { size: 12, family: "'Inter', sans-serif" },
+                                color: '#4b5563'
+                            },
+                            ticks: { display: false, min: 0, max: 100 }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } }
+                    }
+                }
+            });
+
+            const btnGenerateAI = document.getElementById('btn-generate-ai');
+            const aiLoading = document.getElementById('ai-loading');
+            const aiResult = document.getElementById('ai-result');
+
+            btnGenerateAI.addEventListener('click', () => {
+                btnGenerateAI.disabled = true;
+                btnGenerateAI.classList.add('opacity-50', 'cursor-not-allowed');
+                aiResult.classList.add('hidden');
+                aiLoading.classList.remove('hidden');
+
+                setTimeout(() => {
+                    aiLoading.classList.add('hidden');
+                    aiResult.classList.remove('hidden');
+                    btnGenerateAI.disabled = false;
+                    btnGenerateAI.classList.remove('opacity-50', 'cursor-not-allowed');
+                }, 2000); 
+            });
+
+            const flashcard = document.getElementById('demo-flashcard');
+            if (flashcard) {
+                const cardElement = flashcard.querySelector('.flashcard');
+                flashcard.addEventListener('click', () => {
+                    cardElement.classList.toggle('flipped');
+                });
+            }
+        });
+    </script>
+</body>
+</html>
