@@ -4,17 +4,14 @@ import { useAuth } from 'react-oidc-context';
 
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
+import LoadingScreen from './components/LoadingScreen';
 
 export default function App() {
   const auth = useAuth();
 
   // Mostra uma mensagem simples enquanto a AWS valida o token
   if (auth.isLoading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '50px', fontFamily: 'sans-serif' }}>
-        <h2>Carregando a plataforma...</h2>
-      </div>
-    );
+    return <LoadingScreen />;
   }
 
   // Tratamento de erro caso a AWS recuse o login
