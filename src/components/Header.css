@@ -1,0 +1,109 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(8, 15, 40, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(74, 144, 217, 0.12);
+}
+
+.header__container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header__logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+}
+
+.header__logo-icon {
+  width: 24px;
+  height: 32px;
+}
+
+.header__logo-text {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #ffffff;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.header__logo-sub {
+  color: #4A90D9;
+  font-weight: 600;
+}
+
+.header__nav {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header__btn-login {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 400;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  transition: color 0.2s ease, background 0.2s ease;
+  letter-spacing: 0.01em;
+}
+
+.header__btn-login:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.header__btn-signup {
+  background: #4A90D9;
+  border: none;
+  color: #ffffff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.5rem 1.4rem;
+  border-radius: 100px;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  letter-spacing: 0.01em;
+}
+
+.header__btn-signup:hover {
+  background: #5ba3e8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(74, 144, 217, 0.4);
+}
+
+@media (max-width: 480px) {
+  .header__container {
+    padding: 0 1rem;
+  }
+  .header__btn-login {
+    padding: 0.5rem 0.5rem;
+    font-size: 0.85rem;
+  }
+  .header__btn-signup {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+}

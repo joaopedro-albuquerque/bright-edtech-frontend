@@ -1,0 +1,126 @@
+.metrics {
+  background: #f7f9fc;
+  padding: 7rem 2rem;
+}
+
+.metrics__container {
+  max-width: 1000px;
+  margin: 0 auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.metrics__eyebrow {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #4A90D9;
+  margin: 0;
+}
+
+.metrics__title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(1.7rem, 3.5vw, 2.6rem);
+  font-weight: 800;
+  color: #0a1535;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.metrics__title-accent {
+  color: #4A90D9;
+}
+
+.metrics__subtitle {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 300;
+  color: #718096;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Stats grid */
+.metrics__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.metrics__card {
+  background: #ffffff;
+  border: 1px solid rgba(74, 144, 217, 0.12);
+  border-radius: 16px;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 16px rgba(10, 21, 53, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metrics__card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(74, 144, 217, 0.12);
+}
+
+.metrics__card-value {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 800;
+  color: #0a1535;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.metrics__card-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: #718096;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.metrics__cta {
+  background: #4A90D9;
+  color: #ffffff;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.85rem 2.5rem;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  letter-spacing: 0.01em;
+  margin-top: 1rem;
+}
+
+.metrics__cta:hover {
+  background: #5ba3e8;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(74, 144, 217, 0.4);
+}
+
+@media (max-width: 700px) {
+  .metrics__grid {
+    grid-template-columns: 1fr;
+    max-width: 320px;
+  }
+}
+
+@media (max-width: 480px) {
+  .metrics {
+    padding: 5rem 1.25rem;
+  }
+}
