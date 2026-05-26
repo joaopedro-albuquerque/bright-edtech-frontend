@@ -1,16 +1,16 @@
-import { useAuth } from 'react-oidc-context';
+import { useNavigate } from 'react-router-dom';
 import './Header.css';
 import logoBright from '../assets/Logo-Edtech.png';
 
 export default function Header() {
-  const auth = useAuth();
+  const navigate = useNavigate();
 
   const handleLogin = () => {
-    auth.signinRedirect();
+    navigate('/login');
   };
 
   const handleSignup = () => {
-    auth.signinRedirect({ extraQueryParams: { screen_hint: 'signup' } });
+    navigate('/login'); 
   };
 
   return (
@@ -30,7 +30,7 @@ export default function Header() {
           <button className="header__btn-login" onClick={handleLogin}>
             Login
           </button>
-          <button className="header__btn-signup" onClick={handleLogin}>
+          <button className="header__btn-signup" onClick={handleSignup}>
             Cadastrar
           </button>
         </nav>

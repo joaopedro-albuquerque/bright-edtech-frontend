@@ -1,0 +1,439 @@
+/* =====================================================
+   LoginPage.css — Bright EdTech
+   Fiel ao Figma: painel esquerdo #070D48, direito #E8EBF0
+   Fontes: Syne (títulos) + DM Sans (corpo) — já importadas
+   ===================================================== */
+
+/* ── Variáveis ── */
+:root {
+  --lp-brand-bg:    #070D48;
+  --lp-brand-bg2:   #0d1660;   /* hover / gradientes internos */
+  --lp-primary:     #4A90D9;
+  --lp-primary-lt:  #7ec8ff;
+  --lp-form-bg:     #E8EBF0;
+  --lp-form-input:  #ffffff;
+  --lp-text-dark:   #0a1535;
+  --lp-text-muted:  #6b7280;
+  --lp-text-light:  rgba(255,255,255,0.75);
+  --lp-error:       #e53e3e;
+  --lp-radius:      10px;
+  --lp-radius-pill: 100px;
+}
+
+/* ── Layout raiz: 2 colunas ── */
+.lp-root {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* =====================================================
+   COLUNA ESQUERDA — branding
+   ===================================================== */
+.lp-brand {
+  position: relative;
+  background: var(--lp-brand-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 4rem 5rem;
+  overflow: hidden;
+}
+
+/* Padrão de pontos texturizado */
+.lp-brand__dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(74,144,217,0.18) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Glow central ambientado */
+.lp-brand__glow {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(74,144,217,0.15) 0%, transparent 65%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 0;
+  animation: glowBreath 7s ease-in-out infinite alternate;
+}
+
+@keyframes glowBreath {
+  from { transform: translate(-50%,-50%) scale(1);   opacity: 0.8; }
+  to   { transform: translate(-50%,-50%) scale(1.12); opacity: 1; }
+}
+
+/* Logo */
+.lp-brand__logo {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  animation: fadeInDown 0.6s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+.lp-brand__logo-icon {
+  width: 24px;
+  height: 32px;
+}
+
+.lp-brand__logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.lp-brand__logo-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.lp-brand__logo-sub {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--lp-primary);
+  text-transform: uppercase;
+}
+
+/* Tagline */
+.lp-brand__tagline {
+  position: relative;
+  z-index: 1;
+  margin-top: 2rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 300;
+  color: var(--lp-form-input);
+  line-height: 1.55;
+  animation: fadeInDown 0.7s 0.1s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+/* Ilustração */
+.lp-brand__illustration {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.lp-brand__illustration-img {
+  width: 78%;
+  max-height: 70vh;
+  object-fit: contain;
+  border-radius: 16px;
+  mix-blend-mode: lighten;
+  opacity: 0.92;
+  animation: illustrationFloat 6s ease-in-out infinite alternate,
+             fadeInUp 0.9s 0.2s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+@keyframes illustrationFloat {
+  from { transform: translateY(0px); }
+  to   { transform: translateY(-12px); }
+}
+
+/* =====================================================
+   COLUNA DIREITA — formulário
+   ===================================================== */
+.lp-form-col {
+  background: var(--lp-form-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+}
+
+.lp-form-card {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  animation: fadeInUp 0.7s cubic-bezier(0.22,1,0.36,1) both;
+}
+
+.lp-form-card__title {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-weight: 800;
+  color: var(--lp-text-dark);
+  letter-spacing: -0.025em;
+  margin: 0 0 0.4rem;
+  text-align: center;
+}
+
+.lp-form-card__subtitle {
+  font-size: 0.9rem;
+  font-weight: 300;
+  color: var(--lp-text-muted);
+  text-align: center;
+  margin: 0 0 2.5rem;
+}
+
+/* ── Formulário ── */
+.lp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Campo */
+.lp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.lp-field__label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.lp-field__label {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--lp-text-dark);
+  letter-spacing: 0.01em;
+}
+
+.lp-field__forgot {
+  font-size: 0.78rem;
+  color: var(--lp-primary);
+  text-decoration: none;
+  font-weight: 400;
+  transition: color 0.18s;
+}
+
+.lp-field__forgot:hover {
+  color: var(--lp-text-dark);
+  text-decoration: underline;
+}
+
+.lp-field__input-wrap {
+  position: relative;
+}
+
+.lp-field__input {
+  width: 100%;
+  height: 44px;
+  background: var(--lp-form-input);
+  border: 1.5px solid rgba(10,21,53,0.12);
+  border-radius: var(--lp-radius);
+  padding: 0 2.8rem 0 0.9rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.92rem;
+  color: var(--lp-text-dark);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  /* Quando não está no wrapper, sem padding direito extra */
+}
+
+.lp-field > .lp-field__input {
+  padding-right: 0.9rem;
+}
+
+.lp-field__input::placeholder {
+  color: rgba(10,21,53,0.3);
+}
+
+.lp-field__input:focus {
+  border-color: var(--lp-primary);
+  box-shadow: 0 0 0 3px rgba(74,144,217,0.18);
+}
+
+/* Botão olho */
+.lp-field__eye {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--lp-text-muted);
+  display: flex;
+  align-items: center;
+  padding: 0;
+  transition: color 0.18s;
+  line-height: 1;
+}
+
+.lp-field__eye:hover {
+  color: var(--lp-text-dark);
+}
+
+/* Mensagem de erro */
+.lp-error {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(229,62,62,0.08);
+  border: 1px solid rgba(229,62,62,0.25);
+  color: var(--lp-error);
+  font-size: 0.82rem;
+  font-weight: 400;
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--lp-radius);
+  line-height: 1.4;
+}
+
+/* Botão de submit */
+.lp-submit {
+  margin-top: 0.5rem;
+  height: 48px;
+  background: var(--lp-brand-bg);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--lp-radius-pill);
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.lp-submit:hover:not(:disabled) {
+  background: var(--lp-brand-bg2);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(7,13,72,0.3);
+}
+
+.lp-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.lp-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.lp-submit--loading {
+  background: var(--lp-brand-bg2);
+}
+
+/* Spinner inline */
+.lp-submit__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Link de cadastro */
+.lp-register {
+  margin-top: 1.75rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--lp-text-muted);
+}
+
+.lp-register__link {
+  color: var(--lp-primary);
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.18s;
+}
+
+.lp-register__link:hover {
+  color: var(--lp-text-dark);
+  text-decoration: underline;
+}
+
+/* ── Animações de entrada ── */
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* =====================================================
+   RESPONSIVIDADE
+   ===================================================== */
+
+/* Tablet: empilha verticalmente */
+@media (max-width: 820px) {
+  .lp-root {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .lp-brand {
+    min-height: 260px;
+    padding: 2rem 2rem 0;
+    align-items: center;
+  }
+
+  .lp-brand__tagline {
+    text-align: center;
+  }
+
+  .lp-brand__illustration {
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
+    width: 55%;
+    margin: 1.5rem auto 0;
+    animation: illustrationFloat 6s ease-in-out infinite alternate;
+  }
+
+  .lp-form-col {
+    padding: 2.5rem 1.5rem 3rem;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .lp-brand {
+    padding: 1.75rem 1.25rem 0;
+    min-height: 220px;
+  }
+
+  .lp-brand__illustration {
+    width: 70%;
+  }
+
+  .lp-form-col {
+    padding: 2rem 1.25rem 3rem;
+  }
+
+  .lp-form-card__title {
+    font-size: 1.7rem;
+  }
+}

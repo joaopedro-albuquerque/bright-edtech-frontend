@@ -1,41 +1,73 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from 'react-oidc-context';
+import { getCurrentUser } from 'aws-amplify/auth';
+import { Hub } from 'aws-amplify/utils';
 
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
+import LoginPage from './pages/LoginPage';
 import LoadingScreen from './components/LoadingScreen';
 
 export default function App() {
-  const auth = useAuth();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // Mostra uma mensagem simples enquanto a AWS valida o token
-  if (auth.isLoading) {
-    return <LoadingScreen />;
+  useEffect(() => {
+    // 1. Verifica se o usuário já está logado ao abrir o site
+    checkUser();
+
+    // 2. Fica escutando os eventos de login/logout em tempo real
+    const unsubscribe = Hub.listen('auth', ({ payload }) => {
+      switch (payload.event) {
+        case 'signedIn':
+          setIsAuthenticated(true);
+          break;
+        case 'signedOut':
+          setIsAuthenticated(false);
+          break;
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  async function checkUser() {
+    try {
+      // Tenta buscar o usuário logado no Amplify
+      await getCurrentUser();
+      setIsAuthenticated(true);
+    } catch (error) {
+      // Se der erro, significa que não tem ninguém logado
+      setIsAuthenticated(false);
+    } finally {
+      setIsCheckingAuth(false);
+    }
   }
 
-  // Tratamento de erro caso a AWS recuse o login
-  if (auth.error) {
-    return (
-      <div style={{ textAlign: 'center', marginTop: '50px', color: 'red' }}>
-        <h2>Ocorreu um erro no login: {auth.error.message}</h2>
-      </div>
-    );
+  // Mostra a sua animação do Lottie enquanto verifica o token
+  if (isCheckingAuth) {
+    return <LoadingScreen />;
   }
 
   return (
     <BrowserRouter>
       <Routes>
-        {/* Rota principal: Se estiver logado, pula direto pro Dashboard. Se não, mostra a Landing Page. */}
+        {/* Raiz: Mostra a Landing Page para todos */}
         <Route 
           path="/" 
-          element={auth.isAuthenticated ? <Navigate to="/dashboard" /> : <LandingPage />} 
+          element={<LandingPage />} 
+        />
+
+        {/* Nova rota de Login: Se já estiver logado, joga pro Dashboard */}
+        <Route 
+          path="/login" 
+          element={isAuthenticated ? <Navigate to="/dashboard" /> : <LoginPage />} 
         />
         
-        {/* Rota protegida: Se não estiver logado e tentar acessar o Dashboard, é expulso de volta pra raiz. */}
+        {/* Dashboard protegido: Se não estiver logado, joga pra tela de Login */}
         <Route 
           path="/dashboard" 
-          element={auth.isAuthenticated ? <Dashboard /> : <Navigate to="/" />} 
+          element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} 
         />
       </Routes>
     </BrowserRouter>

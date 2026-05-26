@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@lottiefiles/dotlottie-react": "^0.19.4",
+    "aws-amplify": "^6.17.0",
     "oidc-client-ts": "^3.5.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
