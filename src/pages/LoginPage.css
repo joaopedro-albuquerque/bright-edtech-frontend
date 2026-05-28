@@ -24,7 +24,8 @@
 .lp-root {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   font-family: 'DM Sans', sans-serif;
 }
 
@@ -157,12 +158,13 @@
 .lp-form-col {
   background: var(--lp-form-bg);
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   padding: 3rem 2rem;
+  overflow-y: auto
 }
 
 .lp-form-card {
+  margin: auto;
   width: 100%;
   max-width: 400px;
   display: flex;

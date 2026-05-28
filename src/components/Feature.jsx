@@ -1,4 +1,4 @@
-import { useAuth } from 'react-oidc-context';
+import { useNavigate } from 'react-router-dom';
 import './Feature.css';
 import ImgFeature from '../assets/Img-feature.png';
 
@@ -6,11 +6,11 @@ const features = [
   {
     icon: '📁',
     title: 'Organização inteligente de estudos',
-    description: 'Seus PDFs ficam organizados e fáceis de revisar, sem perder tempo com pastas confusas.',
+    description: 'Seus arquivos ficam organizados e fáceis de revisar, sem perder tempo com pastas confusas.',
   },
   {
     icon: '🃏',
-    title: 'Flashcards automáticos',
+    title: 'Geração de Flashcards',
     description: 'Revise o que importa com cartões criados a partir dos seus próprios arquivos.',
   },
   {
@@ -21,10 +21,10 @@ const features = [
 ];
 
 export default function Feature() {
-  const auth = useAuth();
+  const navigate = useNavigate();
 
   const handleCTA = () => {
-    auth.signinRedirect({ extraQueryParams: { screen_hint: 'signup' } });
+    navigate('/login');
   };
 
   return (

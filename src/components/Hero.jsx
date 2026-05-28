@@ -1,11 +1,11 @@
-import { useAuth } from 'react-oidc-context';
+import { useNavigate } from 'react-router-dom';
 import './Hero.css';
 
 export default function Hero() {
-  const auth = useAuth();
+  const navigate = useNavigate();
 
   const handleCTA = () => {
-    auth.signinRedirect({ extraQueryParams: { screen_hint: 'signup' } });
+    navigate('/login');
   };
 
   return (

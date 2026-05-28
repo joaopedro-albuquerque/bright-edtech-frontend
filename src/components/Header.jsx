@@ -10,7 +10,7 @@ export default function Header() {
   };
 
   const handleSignup = () => {
-    navigate('/login'); 
+    navigate('/signup'); 
   };
 
   return (

@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import LoginPage from './pages/LoginPage';
 import LoadingScreen from './components/LoadingScreen';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import SignupPage from './pages/SignupPage';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -68,6 +69,11 @@ export default function App() {
         <Route 
           path="/forgot-password" 
           element={isAuthenticated ? <Navigate to="/dashboard" /> : <ForgotPasswordPage />} 
+        />
+
+        <Route 
+          path="/signup" 
+          element={isAuthenticated ? <Navigate to="/dashboard" /> : <SignupPage />} 
         />
         
         {/* Dashboard protegido: Se não estiver logado, joga pra tela de Login */}

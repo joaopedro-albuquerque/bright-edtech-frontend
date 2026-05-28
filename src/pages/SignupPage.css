@@ -1,0 +1,125 @@
+/* =====================================================
+   SignUpPage.css — Bright EdTech
+   Reutiliza todas as classes lp-* do LoginPage.css.
+   Aqui ficam apenas os estilos exclusivos do cadastro.
+   ===================================================== */
+
+/* ── Inverte as colunas colocando cada filho na coluna
+   certa via grid-column. Simples, sem hacks de rtl.   */
+.su-root .lp-form-col { grid-column: 1; grid-row: 1; }
+.su-root .lp-brand    { grid-column: 2; grid-row: 1; }
+
+/* ── Nome e Sobrenome lado a lado ── */
+.su-name-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+/* ── Checklist de requisitos da senha ── */
+.su-password-rules {
+  list-style: none;
+  padding: 0;
+  margin: 0.45rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+
+.su-password-rules__item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.76rem;
+  color: rgba(10,21,53,0.4);
+  transition: color 0.2s ease;
+}
+
+.su-password-rules__item svg {
+  flex-shrink: 0;
+  color: rgba(10,21,53,0.2);
+  transition: color 0.2s ease;
+}
+
+.su-password-rules__item--ok {
+  color: #2f855a;
+}
+
+.su-password-rules__item--ok svg {
+  color: #38a169;
+}
+
+/* ── Ícone de envelope no passo de confirmação ── */
+.su-confirm-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(74,144,217,0.1);
+  border: 1.5px solid rgba(74,144,217,0.2);
+  color: var(--lp-primary);
+  margin: 0 auto 1.25rem;
+  animation: suIconPop 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+@keyframes suIconPop {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1);   }
+}
+
+/* ── Campo de código (herdado do ForgotPassword) ── */
+.fp-input--code {
+  font-family: 'Syne', sans-serif !important;
+  font-size: 1.3rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.35em !important;
+  text-align: center;
+  padding-right: 0.9rem !important;
+}
+
+/* ── "Não recebeu o código?" ── */
+.fp-resend {
+  margin-top: 1rem;
+  text-align: center;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  color: var(--lp-text-muted);
+}
+
+.fp-resend__btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--lp-primary);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.18s;
+}
+
+.fp-resend__btn:hover { color: var(--lp-text-dark); }
+
+/* ── Responsividade ──
+   Em mobile as colunas somem, então desfaz a atribuição
+   explícita e o brand vai para cima naturalmente.       */
+@media (max-width: 820px) {
+  .su-root .lp-form-col { grid-column: 1; grid-row: 2; }
+  .su-root .lp-brand    { grid-column: 1; grid-row: 1; }
+
+  .su-name-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .su-name-row {
+    grid-template-columns: 1fr;
+    gap: 1.1rem;
+  }
+}

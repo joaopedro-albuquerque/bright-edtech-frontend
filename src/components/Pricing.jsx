@@ -1,4 +1,4 @@
-import { useAuth } from 'react-oidc-context';
+import { useNavigate } from 'react-router-dom';
 import './Pricing.css';
 
 const plans = [
@@ -21,7 +21,7 @@ const plans = [
     id: 'plus',
     name: 'Bright Plus',
     label: 'Mais popular',
-    price: 'R$29',
+    price: 'R$49',
     priceNote: '/mês',
     features: [
       'Tudo do Freemium +',
@@ -50,15 +50,10 @@ const plans = [
 ];
 
 export default function Pricing() {
-  const auth = useAuth();
+  const navigate = useNavigate();
 
-  const handlePlanCTA = (planId) => {
-    if (planId === 'institucional') {
-      // Could redirect to a contact page
-      window.location.href = 'mailto:contato@brightedtech.com';
-      return;
-    }
-    auth.signinRedirect({ extraQueryParams: { screen_hint: 'signup', plan: planId } });
+  const handlePlanCTA = () => {
+    navigate('/login');
   };
 
   return (
