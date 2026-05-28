@@ -1,0 +1,101 @@
+/* =====================================================
+   DashboardLayout.css — Bright EdTech
+   ===================================================== */
+
+.dl-root {
+  display: flex;
+  min-height: 100vh;
+  background: #0e1420;
+}
+
+/* Empurra o conteúdo para a direita conforme a largura do sidebar */
+.dl-main {
+  flex: 1;
+  margin-left: 240px; /* var(--sb-width) */
+  transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-width: 0;
+}
+
+.dl-root--collapsed .dl-main {
+  margin-left: 68px; /* var(--sb-width-collapsed) */
+}
+
+/* ── Área de conteúdo ── */
+.dl-content {
+  flex: 1;
+  padding: 2rem 2.5rem;
+  overflow-y: auto;
+}
+
+/* ── Topbar (visível só no mobile) ── */
+.dl-topbar {
+  display: none;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 1.25rem;
+  height: 56px;
+  background: #070D48;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+}
+
+.dl-topbar__menu-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255,255,255,0.7);
+  display: flex;
+  align-items: center;
+  padding: 0.25rem;
+  border-radius: 6px;
+  transition: color 0.18s, background 0.18s;
+}
+
+.dl-topbar__menu-btn:hover {
+  color: #ffffff;
+  background: rgba(255,255,255,0.08);
+}
+
+.dl-topbar__brand {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* ── Overlay mobile ── */
+.dl-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 49;
+  backdrop-filter: blur(2px);
+  animation: overlayIn 0.2s ease;
+}
+
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Responsividade ── */
+@media (max-width: 768px) {
+  .dl-main {
+    margin-left: 0;
+  }
+
+  .dl-root--collapsed .dl-main {
+    margin-left: 0;
+  }
+
+  .dl-topbar {
+    display: flex;
+  }
+
+  .dl-content {
+    padding: 1.5rem 1.25rem;
+  }
+}

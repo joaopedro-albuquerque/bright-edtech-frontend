@@ -1,0 +1,413 @@
+/* =====================================================
+   Sidebar.css — Bright EdTech
+   Fundo: #070D48 | Hover: rgba(17,23,85,0.91)
+   Fontes: Syne + DM Sans
+   ===================================================== */
+
+/* ── Variáveis locais ── */
+.sidebar {
+  --sb-bg:          #070D48;
+  --sb-hover:       rgba(17, 23, 85, 0.91);
+  --sb-active:      rgba(74, 144, 217, 0.18);
+  --sb-active-border: #4A90D9;
+  --sb-text:        rgba(255, 255, 255, 0.65);
+  --sb-text-bright: #ffffff;
+  --sb-icon:        rgba(255, 255, 255, 0.5);
+  --sb-divider:     rgba(255, 255, 255, 0.07);
+  --sb-width:       240px;
+  --sb-width-collapsed: 68px;
+  --sb-transition:  0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  --sb-radius:      12px;
+}
+
+/* ── Container principal ── */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: var(--sb-width);
+  background: var(--sb-bg);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  z-index: 50;
+  transition: width var(--sb-transition);
+  overflow: hidden;
+
+  /* Textura de pontos herdada das páginas de auth */
+  background-image: radial-gradient(circle, rgba(74,144,217,0.1) 1px, transparent 1px);
+  background-size: 28px 28px;
+  background-color: var(--sb-bg);
+}
+
+.sidebar--collapsed {
+  width: var(--sb-width-collapsed);
+}
+
+/* ── Cabeçalho ── */
+.sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 1rem 1.25rem 1.25rem;
+  flex-shrink: 0;
+  gap: 0.5rem;
+  min-height: 72px;
+}
+
+.sidebar__logo {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  overflow: hidden;
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar__logo-icon {
+  width: 24px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.sidebar__logo-text {
+  display: flex;
+  flex-direction: row;
+  gap: 0.3rem;
+  align-items: baseline;
+  overflow: hidden;
+  white-space: nowrap;
+  animation: sbFadeIn 0.2s ease both;
+}
+
+.sidebar__logo-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--sb-text-bright);
+  letter-spacing: -0.01em;
+}
+
+.sidebar__logo-product {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #4A90D9;
+  letter-spacing: -0.01em;
+}
+
+/* Botão colapsar */
+.sidebar__collapse-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--sb-text);
+  flex-shrink: 0;
+  transition: background 0.18s, color 0.18s, transform 0.18s;
+}
+
+.sidebar__collapse-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--sb-text-bright);
+}
+
+.sidebar__collapse-icon {
+  display: flex;
+  transition: transform var(--sb-transition);
+}
+
+.sidebar__collapse-icon--rotated {
+  transform: rotate(180deg);
+}
+
+/* Divisor */
+.sidebar__divider {
+  height: 1px;
+  background: var(--sb-divider);
+  margin: 0 1.25rem;
+  flex-shrink: 0;
+}
+
+/* ── Navegação ── */
+.sidebar__nav {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0.75rem 0;
+  scrollbar-width: none;
+}
+
+.sidebar__nav::-webkit-scrollbar { display: none; }
+
+.sidebar__nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+/* Item de navegação */
+.sidebar__nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.7rem 1.25rem;
+  margin: 0 0.6rem;
+  border-radius: var(--sb-radius);
+  text-decoration: none;
+  color: var(--sb-text);
+  position: relative;
+  transition: background 0.18s ease, color 0.18s ease, padding-left 0.18s ease;
+  cursor: pointer;
+  /* Garante que label não quebre o layout ao colapsar */
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.sidebar__nav-item:hover {
+  background: var(--sb-hover);
+  color: var(--sb-text-bright);
+  padding-left: 1.45rem;
+}
+
+/* Estado ativo */
+.sidebar__nav-item--active {
+  background: var(--sb-active);
+  color: var(--sb-text-bright);
+  border-left: 3px solid var(--sb-active-border);
+  padding-left: calc(1.25rem - 3px); /* compensa a borda */
+}
+
+.sidebar__nav-item--active:hover {
+  background: var(--sb-active);
+  padding-left: calc(1.25rem - 3px);
+}
+
+/* Brilho sutil no item ativo */
+.sidebar__nav-item--active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(74,144,217,0.08) 0%, transparent 60%);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.sidebar__nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: inherit;
+  width: 18px;
+}
+
+.sidebar__nav-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.855rem;
+  font-weight: 500;
+  line-height: 1.35;
+  flex: 1;
+  min-width: 0;
+  animation: sbFadeIn 0.15s ease both;
+}
+
+.sidebar__nav-arrow {
+  display: flex;
+  align-items: center;
+  color: rgba(255,255,255,0.2);
+  flex-shrink: 0;
+  transition: color 0.18s, transform 0.18s;
+  animation: sbFadeIn 0.15s ease both;
+}
+
+.sidebar__nav-item:hover .sidebar__nav-arrow,
+.sidebar__nav-item--active .sidebar__nav-arrow {
+  color: rgba(255,255,255,0.45);
+  transform: translateX(2px);
+}
+
+/* Estado colapsado: centraliza o ícone */
+.sidebar--collapsed .sidebar__nav-item {
+  justify-content: center;
+  padding: 0.75rem;
+  margin: 0 0.6rem;
+  border-left: none;
+}
+
+.sidebar--collapsed .sidebar__nav-item--active {
+  border-left: none;
+  border-bottom: 2px solid var(--sb-active-border);
+  padding-bottom: calc(0.75rem - 2px);
+}
+
+.sidebar--collapsed .sidebar__nav-item:hover {
+  padding-left: 0.75rem;
+}
+
+/* ── Rodapé ── */
+.sidebar__footer {
+  flex-shrink: 0;
+  padding-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sidebar__profile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem;
+  margin: 0 0.6rem;
+  border-radius: var(--sb-radius);
+  transition: background 0.18s;
+  overflow: hidden;
+}
+
+.sidebar__profile:hover {
+  background: var(--sb-hover);
+}
+
+.sidebar__profile--collapsed {
+  justify-content: center;
+  padding: 0.75rem;
+}
+
+.sidebar__avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(74,144,217,0.2);
+  border: 1.5px solid rgba(74,144,217,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7ec8ff;
+  flex-shrink: 0;
+}
+
+.sidebar__profile-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  animation: sbFadeIn 0.15s ease both;
+}
+
+.sidebar__profile-name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.83rem;
+  font-weight: 500;
+  color: var(--sb-text-bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar__profile-plan {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.72rem;
+  color: #4A90D9;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+/* Botão de logout no rodapé (expandido) */
+.sidebar__logout-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 7px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--sb-text);
+  flex-shrink: 0;
+  transition: background 0.18s, color 0.18s;
+}
+
+.sidebar__logout-btn:hover:not(:disabled) {
+  background: rgba(229,62,62,0.15);
+  color: #fc8181;
+  border-color: rgba(229,62,62,0.25);
+}
+
+.sidebar__logout-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Botão de logout isolado (colapsado) */
+.sidebar__logout-icon-btn {
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.6rem;
+  cursor: pointer;
+  color: var(--sb-text);
+  transition: color 0.18s;
+}
+
+.sidebar__logout-icon-btn:hover:not(:disabled) {
+  color: #fc8181;
+}
+
+/* Spinner de loading (logout) */
+.sidebar__logout-spinner {
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: rgba(255,255,255,0.7);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Animação de fade para labels ── */
+@keyframes sbFadeIn {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Acessibilidade: foco visível ── */
+.sidebar__nav-item:focus-visible,
+.sidebar__collapse-btn:focus-visible,
+.sidebar__logout-btn:focus-visible,
+.sidebar__logout-icon-btn:focus-visible {
+  outline: 2px solid #4A90D9;
+  outline-offset: 2px;
+}
+
+/* ── Responsividade ──
+   Em mobile o sidebar vira um drawer que aparece
+   sobre o conteúdo via classe .sidebar--open       */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform var(--sb-transition), width var(--sb-transition);
+    box-shadow: 4px 0 32px rgba(0,0,0,0.4);
+  }
+
+  .sidebar--open {
+    transform: translateX(0);
+  }
+
+  .sidebar--collapsed {
+    width: var(--sb-width); /* no mobile não colapsa, some */
+  }
+}
