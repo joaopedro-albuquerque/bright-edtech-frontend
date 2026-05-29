@@ -14,7 +14,7 @@
   --sb-text-bright: #ffffff;
   --sb-icon:        rgba(255, 255, 255, 0.5);
   --sb-divider:     rgba(255, 255, 255, 0.07);
-  --sb-width:       240px;
+  --sb-width:       280px;
   --sb-width-collapsed: 68px;
   --sb-transition:  0.28s cubic-bezier(0.4, 0, 0.2, 1);
   --sb-radius:      12px;
@@ -66,7 +66,7 @@
 }
 
 .sidebar__logo-icon {
-  width: 24px;
+  width: 20px;
   height: 30px;
   flex-shrink: 0;
 }
@@ -84,7 +84,7 @@
 .sidebar__logo-name {
   font-family: 'Syne', sans-serif;
   font-size: 1.05rem;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--sb-text-bright);
   letter-spacing: -0.01em;
 }
@@ -125,6 +125,17 @@
 
 .sidebar__collapse-icon--rotated {
   transform: rotate(180deg);
+}
+
+/* Estado colapsado: Empilha a logo e o botão de forma centralizada */
+.sidebar--collapsed .sidebar__header {
+  flex-direction: column;
+  padding: 1.5rem 0 1rem 0; /* Zera o espaçamento lateral para centralizar perfeitamente */
+  gap: 1.2rem; /* Dá um respiro entre a logo e o botão */
+}
+
+.sidebar--collapsed .sidebar__logo {
+  justify-content: center;
 }
 
 /* Divisor */

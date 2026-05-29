@@ -61,9 +61,9 @@ const icons = {
 
 const navItems = [
   { to: '/dashboard',   label: 'Visão Geral',                  icon: icons.overview   },
-  { to: '/documents',   label: 'Criação e Gestão de Documentos', icon: icons.documents  },
+  { to: '/documents',   label: 'Gestão de Documentos', icon: icons.documents  },
   { to: '/flashcards',  label: 'Criação de Flashcards',         icon: icons.flashcards },
-  { to: '/quizzes',     label: 'Criação e Gestão de Questionários', icon: icons.quizzes },
+  { to: '/quizzes',     label: 'Gestão de Questionários', icon: icons.quizzes },
 ];
 
 /* ── Dados do usuário — futuramente virão do contexto/auth ── */
@@ -92,19 +92,19 @@ export default function Sidebar({ collapsed, onToggle }) {
 
       {/* ── Cabeçalho: logo + botão de colapsar ── */}
       <div className="sidebar__header">
-        <div className="sidebar__logo">
-          <img
-            src={logoBright}
-            alt="Bright EdTech"
-            className="sidebar__logo-icon"
-          />
-          {!collapsed && (
+        {!collapsed && (
+          <div className="sidebar__logo">
+            <img
+              src={logoBright}
+              alt="Bright EdTech logo"
+              className="sidebar__logo-icon"
+            />
             <div className="sidebar__logo-text">
               <span className="sidebar__logo-name">Bright</span>
               <span className="sidebar__logo-product">EdTech</span>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         <button
           className="sidebar__collapse-btn"

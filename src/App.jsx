@@ -10,6 +10,7 @@ import LoadingScreen from './components/LoadingScreen';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import SignupPage from './pages/SignupPage';
 import DashboardLayout from './components/DashboardLayout';
+import DocumentsPage from './pages/DocumentsPage';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -77,13 +78,11 @@ export default function App() {
           element={isAuthenticated ? <Navigate to="/dashboard" /> : <SignupPage />} 
         />
         
-        {/* Dashboard protegido: Se não estiver logado, joga pra tela de Login */}
-        <Route 
-          path="/dashboard" 
-          element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" />} 
-        >
-          {/* O 'index' avisa que o <Dashboard /> antigo é a tela padrão que aparece DENTRO do Layout */}
-          <Route index element={<Dashboard />} />
+        <Route element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/documents" element={<DocumentsPage />} />
+          {/* <Route path="/flashcards" element={<FlashcardsPage />} /> */}
+          {/* <Route path="/quizzes" element={<QuizzesPage />} /> */}
         </Route>
       </Routes>
     </BrowserRouter>
