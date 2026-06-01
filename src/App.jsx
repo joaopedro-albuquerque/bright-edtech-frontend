@@ -4,13 +4,14 @@ import { getCurrentUser } from 'aws-amplify/auth';
 import { Hub } from 'aws-amplify/utils';
 
 import LandingPage from './pages/LandingPage';
-import Dashboard from './pages/Dashboard';
 import LoginPage from './pages/LoginPage';
 import LoadingScreen from './components/LoadingScreen';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import SignupPage from './pages/SignupPage';
 import DashboardLayout from './components/DashboardLayout';
 import DocumentsPage from './pages/DocumentsPage';
+import OverviewPage from './pages/OverviewPage';
+import ProfilePage from './pages/ProfilePage';
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -79,8 +80,9 @@ export default function App() {
         />
         
         <Route element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" />}>
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard" element={<OverviewPage />} />
           <Route path="/documents" element={<DocumentsPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           {/* <Route path="/flashcards" element={<FlashcardsPage />} /> */}
           {/* <Route path="/quizzes" element={<QuizzesPage />} /> */}
         </Route>

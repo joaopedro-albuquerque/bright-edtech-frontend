@@ -26,7 +26,7 @@
 /* ── Área de conteúdo ── */
 .dl-content {
   flex: 1;
-  padding: 2rem 2.5rem;
+  padding: 2rem 5rem;
   overflow-y: auto;
 }
 

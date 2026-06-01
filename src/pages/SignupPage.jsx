@@ -12,6 +12,7 @@ export default function SignUpPage() {
   const [password, setPassword]     = useState('');
   const [showPass, setShowPass]     = useState(false);
   const [confirmCode, setConfirmCode] = useState('');
+  const [cognitoId, setCognitoId] = useState('');
 
   // step 1 = formulário | step 2 = confirmação de e-mail
   const [step, setStep]         = useState(1);
@@ -39,10 +40,11 @@ export default function SignUpPage() {
     setErrorMsg('');
 
     try {
-      await signUp({
+      const { userId } = await signUp({
         username: email,
         password,
       });
+      setCognitoId(userId);
       setStep(2);
     } catch (error) {
       console.error('Erro no cadastro:', error);
@@ -74,15 +76,18 @@ export default function SignUpPage() {
       // 2. SEGUNDO PASSO: Se a AWS aprovou, salva no seu banco de dados
       // Usamos um try/catch isolado aqui só para a sua API não interferir nos erros da AWS
       try {
-        await fetch('SUA_URL_AQUI/profile/', {
+        await fetch('http://ALB-bright-edtech-backend-1682576082.us-east-1.elb.amazonaws.com/profile/', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            nome: firstName,
-            sobrenome: lastName,
             email: email,
+            nome: `${firstName} ${lastName}`,
+            estilo_preferido: "", 
+            formato_preferido: "",
+            objetivos_estudo: "",
+            cognito_id: cognitoId
           }),
         });
       } catch (dbError) {

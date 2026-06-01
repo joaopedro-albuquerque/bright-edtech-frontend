@@ -1,0 +1,472 @@
+/* =====================================================
+   ProfilePage.css — Bright EdTech
+   ===================================================== */
+
+.pf-root {
+  --pf-radius:      14px;
+  --pf-border:      rgba(10, 21, 53, 0.09);
+  --pf-shadow:      0 2px 8px rgba(10, 21, 53, 0.06);
+  --pf-red:         #e53e3e;
+  --pf-red-lt:      rgba(229, 62, 62, 0.08);
+  --pf-red-border:  rgba(229, 62, 62, 0.22);
+  --pf-green:       #276749;
+  --pf-green-lt:    rgba(39, 103, 73, 0.08);
+  --pf-green-border:rgba(39, 103, 73, 0.22);
+  --pf-blue:        #4A90D9;
+}
+
+.pf-root {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  max-width: 640px;        /* formulário nunca estica demais */
+  padding-bottom: 4rem;
+  animation: pfFadeUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ─────────────────────────────────────────
+   CABEÇALHO DO PERFIL
+───────────────────────────────────────── */
+.pf-header {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--pf-border);
+}
+
+.pf-header__avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(74, 144, 217, 0.1);
+  border: 2px solid rgba(74, 144, 217, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pf-blue);
+  flex-shrink: 0;
+}
+
+.pf-header__name {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(1.2rem, 2.5vw, 1.6rem);
+  font-weight: 800;
+  color: var(--lp-text-dark, #0a1535);
+  letter-spacing: -0.02em;
+  margin: 0 0 0.2rem;
+}
+
+.pf-header__email {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 300;
+  color: var(--lp-text-muted, #6b7280);
+  margin: 0;
+}
+
+/* ─────────────────────────────────────────
+   ALERTAS DE FEEDBACK
+───────────────────────────────────────── */
+.pf-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 400;
+  animation: pfFadeUp 0.25s ease both;
+}
+
+.pf-alert button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.55;
+  font-size: 1rem;
+  padding: 0;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+.pf-alert button:hover { opacity: 1; }
+
+.pf-alert--error {
+  background: var(--pf-red-lt);
+  border: 1px solid var(--pf-red-border);
+  color: #c53030;
+}
+
+.pf-alert--success {
+  background: var(--pf-green-lt);
+  border: 1px solid var(--pf-green-border);
+  color: var(--pf-green);
+  display: flex;
+  gap: 0.5rem;
+}
+.pf-alert--success svg { flex-shrink: 0; }
+
+/* ─────────────────────────────────────────
+   CARDS DE SEÇÃO
+───────────────────────────────────────── */
+.pf-card {
+  background: #ffffff;
+  border: 1.5px solid var(--pf-border);
+  border-radius: var(--pf-radius);
+  box-shadow: var(--pf-shadow);
+  overflow: hidden;
+}
+
+.pf-card--danger {
+  border-color: var(--pf-red-border);
+}
+
+.pf-card__header {
+  padding: 1.4rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--pf-border);
+}
+
+.pf-card--danger .pf-card__header {
+  border-bottom-color: var(--pf-red-border);
+  background: rgba(229, 62, 62, 0.03);
+}
+
+.pf-card__title {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--lp-text-dark, #0a1535);
+  margin: 0 0 0.2rem;
+  letter-spacing: -0.01em;
+}
+
+.pf-card__title--danger { color: #9b2c2c; }
+
+.pf-card__sub {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 300;
+  color: var(--lp-text-muted, #6b7280);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ─────────────────────────────────────────
+   FORMULÁRIO
+───────────────────────────────────────── */
+.pf-form {
+  padding: 1.4rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.pf-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.pf-form__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.25rem;
+}
+
+/* ─────────────────────────────────────────
+   CAMPOS
+───────────────────────────────────────── */
+.pf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pf-field__label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: var(--lp-text-dark, #0a1535);
+}
+
+/* Badge "somente leitura" */
+.pf-field__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--lp-text-muted, #6b7280);
+  background: rgba(10, 21, 53, 0.06);
+  padding: 0.15rem 0.5rem;
+  border-radius: 100px;
+}
+
+.pf-field__input {
+  height: 42px;
+  background: #f7f9fc;
+  border: 1.5px solid rgba(10, 21, 53, 0.11);
+  border-radius: 10px;
+  padding: 0 0.9rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  color: var(--lp-text-dark, #0a1535);
+  outline: none;
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pf-field__input:focus {
+  border-color: var(--pf-blue);
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.15);
+  background: #ffffff;
+}
+
+.pf-field__input--readonly {
+  background: rgba(10, 21, 53, 0.04) !important;
+  color: var(--lp-text-muted, #6b7280) !important;
+  cursor: default;
+  border-style: dashed;
+}
+.pf-field__input--readonly:focus {
+  border-color: rgba(10, 21, 53, 0.11) !important;
+  box-shadow: none !important;
+}
+
+/* Input que bate o texto de confirmação */
+.pf-field__input--match {
+  border-color: #38a169 !important;
+  box-shadow: 0 0 0 3px rgba(56, 161, 105, 0.15) !important;
+  background: rgba(56, 161, 105, 0.03) !important;
+}
+
+/* ─────────────────────────────────────────
+   BOTÕES
+───────────────────────────────────────── */
+.pf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 0.6rem 1.2rem;
+  border-radius: 100px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.18s, transform 0.15s, box-shadow 0.18s, opacity 0.18s;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.pf-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important; }
+
+.pf-btn--primary {
+  background: var(--lp-brand-bg, #070D48);
+  color: #ffffff;
+}
+.pf-btn--primary:hover:not(:disabled) {
+  background: #0d1660;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(7, 13, 72, 0.25);
+}
+
+.pf-btn--danger {
+  background: var(--pf-red);
+  color: #ffffff;
+}
+.pf-btn--danger:hover:not(:disabled) {
+  background: #c53030;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(229, 62, 62, 0.3);
+}
+
+.pf-btn--ghost {
+  background: transparent;
+  color: var(--lp-text-muted, #6b7280);
+  border: 1px solid rgba(10, 21, 53, 0.12);
+}
+.pf-btn--ghost:hover:not(:disabled) {
+  background: rgba(10, 21, 53, 0.04);
+  color: var(--lp-text-dark, #0a1535);
+}
+
+.pf-btn--loading { pointer-events: none; }
+
+/* Spinner inline */
+.pf-spin {
+  animation: pfSpin 0.65s linear infinite;
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────
+   ÁREA DE RISCO
+───────────────────────────────────────── */
+.pf-danger-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
+.pf-danger-icon {
+  display: flex;
+  align-items: center;
+  color: var(--pf-red);
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.pf-danger-body {
+  padding: 1.25rem 1.5rem;
+}
+
+.pf-danger-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.pf-danger-item__title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #9b2c2c;
+  margin: 0 0 0.25rem;
+}
+
+.pf-danger-item__desc {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 300;
+  color: var(--lp-text-muted, #6b7280);
+  margin: 0;
+  line-height: 1.5;
+  max-width: 340px;
+}
+
+/* ─────────────────────────────────────────
+   MODAL DE CONFIRMAÇÃO
+───────────────────────────────────────── */
+.pf-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 13, 72, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: pfFadeIn 0.2s ease;
+}
+
+.pf-modal {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 24px 60px rgba(7, 13, 72, 0.3);
+  overflow: hidden;
+  animation: pfSlideUp 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.pf-modal__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 1.4rem 1.5rem 1rem;
+  border-bottom: 1px solid var(--pf-red-border);
+  background: rgba(229, 62, 62, 0.03);
+}
+
+.pf-modal__warn-icon {
+  color: var(--pf-red);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.pf-modal__title {
+  font-family: 'Syne', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #9b2c2c;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.pf-modal__body {
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.pf-modal__text {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  color: var(--lp-text-muted, #6b7280);
+  line-height: 1.65;
+  margin: 0;
+}
+
+.pf-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  padding: 0 1.5rem 1.4rem;
+}
+
+/* ─────────────────────────────────────────
+   SKELETON LOADING
+───────────────────────────────────────── */
+.pf-skeleton {
+  background: linear-gradient(90deg,
+    rgba(10,21,53,0.06) 25%,
+    rgba(10,21,53,0.1)  50%,
+    rgba(10,21,53,0.06) 75%
+  );
+  background-size: 800px 100%;
+  animation: pfShimmer 1.4s infinite linear;
+  border-radius: var(--pf-radius);
+}
+
+.pf-skeleton--header    { height: 72px; width: 55%; }
+.pf-skeleton--card      { height: 220px; }
+.pf-skeleton--card-sm   { height: 130px; }
+
+/* ─────────────────────────────────────────
+   ANIMAÇÕES
+───────────────────────────────────────── */
+@keyframes pfFadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+@keyframes pfFadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pfSlideUp {
+  from { opacity: 0; transform: translateY(16px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+@keyframes pfSpin    { to { transform: rotate(360deg); } }
+@keyframes pfShimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+/* ─────────────────────────────────────────
+   RESPONSIVIDADE
+───────────────────────────────────────── */
+@media (max-width: 600px) {
+  .pf-form__row { grid-template-columns: 1fr; }
+  .pf-danger-item { flex-direction: column; align-items: flex-start; }
+  .pf-btn--danger { width: 100%; justify-content: center; }
+}

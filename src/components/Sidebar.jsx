@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { signOut } from 'aws-amplify/auth';
+import { signOut, fetchAuthSession } from 'aws-amplify/auth';
 import './Sidebar.css';
 import logoBright from '../assets/Logo-Edtech.png';
 
@@ -66,15 +66,42 @@ const navItems = [
   { to: '/quizzes',     label: 'Gestão de Questionários', icon: icons.quizzes },
 ];
 
-/* ── Dados do usuário — futuramente virão do contexto/auth ── */
-const mockUser = {
-  name: 'Aluno Teste',
-  plan: 'Plano Pro',
-};
+const API_BASE = 'http://ALB-bright-edtech-backend-1682576082.us-east-1.elb.amazonaws.com';
 
 export default function Sidebar({ collapsed, onToggle }) {
   const navigate = useNavigate();
   const [loggingOut, setLoggingOut] = useState(false);
+
+  const [userName, setUserName] = useState('Carregando...');
+
+  useEffect(() => {
+    async function fetchUserProfile() {
+      try {
+        // 1. Pega os dados de quem está logado no Cognito
+        const session = await fetchAuthSession();
+        const token = session.tokens.idToken.toString();
+
+        // 2. Busca o perfil no banco de dados do seu amigo
+        const res = await fetch(`${API_BASE}/profile/`, {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          // 3. Junta o nome e sobrenome e joga na tela
+          setUserName(`${data.nome} ${data.sobrenome}`);
+        } else {
+          setUserName('Aluno'); // Nome padrão caso a API falhe
+        }
+      } catch (err) {
+        console.error('Erro ao buscar o nome do usuário:', err);
+        setUserName('Aluno');
+      }
+    }
+
+    fetchUserProfile();
+  }, []);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -150,14 +177,17 @@ export default function Sidebar({ collapsed, onToggle }) {
       <div className="sidebar__footer">
         <div className="sidebar__divider" />
 
-        <div className={`sidebar__profile${collapsed ? ' sidebar__profile--collapsed' : ''}`}>
-          <div className="sidebar__avatar" title={collapsed ? mockUser.name : undefined}>
+        <div 
+          className={`sidebar__profile${collapsed ? ' sidebar__profile--collapsed' : ''}`} title={collapsed ? userName : undefined}
+          onClick={() => navigate('/profile')}
+          style={{ cursor: 'pointer' }}>
+          <div className="sidebar__avatar">
             {icons.user}
           </div>
           {!collapsed && (
             <div className="sidebar__profile-info">
-              <span className="sidebar__profile-name">{mockUser.name}</span>
-              <span className="sidebar__profile-plan">{mockUser.plan}</span>
+              <span className="sidebar__profile-name">{userName}</span>
+              <span className="sidebar__profile-plan">Plano Pro</span>
             </div>
           )}
           {!collapsed && (

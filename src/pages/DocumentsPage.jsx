@@ -5,7 +5,7 @@ import './DocumentsPage.css';
 /* ─────────────────────────────────────────────
    CONSTANTES
 ───────────────────────────────────────────── */
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'http://ALB-bright-edtech-backend-1682576082.us-east-1.elb.amazonaws.com';
 
 /* ─────────────────────────────────────────────
    ÍCONES SVG INLINE
@@ -134,7 +134,7 @@ export default function DocumentsPage() {
       setUserId(id);
 
       const res = await fetch(
-        `${API_BASE}/document/pastas/user/${id}?limit=50&offset=0`,
+        `${API_BASE}/pastas/user/${id}?limit=50&offset=0`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível carregar as pastas.`);
@@ -160,7 +160,7 @@ export default function DocumentsPage() {
     try {
       const { token } = await getAuthHeaders();
       const res = await fetch(
-        `${API_BASE}/document/pastas/${folder.id}/conteudo?limit=50&offset=0`,
+        `${API_BASE}/pastas/${folder.id}/conteudo?limit=50&offset=0`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível abrir a pasta.`);
@@ -199,12 +199,12 @@ export default function DocumentsPage() {
     setIsSaving(true);
     try {
       const { token, userId: uid } = await getAuthHeaders();
-      const res = await fetch(`${API_BASE}/document/pastas`, {
+      const res = await fetch(`${API_BASE}/pastas`, {
         method:  'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nome:      newFolderName.trim(),
-          user_id:   userId ?? uid,
+          usuario_id:   userId ?? uid,
           parent_id: currentFolderId,
         }),
       });
@@ -230,7 +230,7 @@ export default function DocumentsPage() {
       const { token } = await getAuthHeaders();
       // application/x-www-form-urlencoded conforme especificado
       const body = new URLSearchParams({ nome: renameName.trim() });
-      const res = await fetch(`${API_BASE}/document/pastas/${renameTarget.id}`, {
+      const res = await fetch(`${API_BASE}/pastas/${renameTarget.id}`, {
         method:  'PUT',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/x-www-form-urlencoded' },
         body:    body.toString(),
@@ -256,7 +256,7 @@ export default function DocumentsPage() {
     setIsSaving(true);
     try {
       const { token } = await getAuthHeaders();
-      const res = await fetch(`${API_BASE}/document/pastas/${deleteTarget.id}`, {
+      const res = await fetch(`${API_BASE}/pastas/${deleteTarget.id}`, {
         method:  'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -285,7 +285,7 @@ export default function DocumentsPage() {
       formData.append('nome_documento',  uploadName.trim() || uploadFile.name);
 
       // ⚠️ SEM Content-Type — o browser define com o boundary automaticamente
-      const res = await fetch(`${API_BASE}/document/documentos/upload`, {
+      const res = await fetch(`${API_BASE}/documentos/upload`, {
         method:  'POST',
         headers: { Authorization: `Bearer ${token}` },
         body:    formData,
