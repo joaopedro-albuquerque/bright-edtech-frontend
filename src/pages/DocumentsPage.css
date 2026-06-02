@@ -596,6 +596,29 @@
   box-shadow: 0 8px 28px rgba(74, 144, 217, 0.55);
 }
 
+/* Faixa de "gerando…" no card do arquivo */
+.dp-card__generating {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 1rem 0.65rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.75rem;
+  color: var(--lp-primary, #4A90D9);
+  font-weight: 500;
+  border-top: 1px solid rgba(74, 144, 217, 0.12);
+}
+
+/* Item do dropdown com cor de destaque para ação de IA */
+.dp-dropdown__item--ai {
+  color: #5c6bc0;
+  font-weight: 500;
+}
+.dp-dropdown__item--ai:hover {
+  background: rgba(92, 107, 192, 0.07);
+  color: #3949ab;
+}
+
 /* ─────────────────────────────────────────
    ANIMAÇÕES
 ───────────────────────────────────────── */
