@@ -2,13 +2,15 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { Amplify } from 'aws-amplify';
+import { COGNITO_USER_POOL_ID, COGNITO_USER_POOL_CLIENT_ID, COGNITO_REGION } from './config';
 
-// Configuração direta para o pool do Cognito
+// Configure Amplify using env vars (with safe fallbacks)
 Amplify.configure({
   Auth: {
     Cognito: {
-      userPoolId: 'us-east-1_VI9tx818s',
-      userPoolClientId: '5amua03gvll1kessno4gebpvp2',
+      userPoolId: COGNITO_USER_POOL_ID,
+      userPoolClientId: COGNITO_USER_POOL_CLIENT_ID,
+      region: COGNITO_REGION,
     }
   }
 });
