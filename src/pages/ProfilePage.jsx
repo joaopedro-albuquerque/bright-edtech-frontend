@@ -2,11 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { fetchAuthSession, deleteUser } from 'aws-amplify/auth';
 import { useNavigate } from 'react-router-dom';
 import './ProfilePage.css';
-
-/* ─────────────────────────────────────────────
-   CONSTANTES
-───────────────────────────────────────────── */
-const API_BASE = 'http://ALB-bright-edtech-backend-1682576082.us-east-1.elb.amazonaws.com';
+import { API_BASE } from '../config';
 
 /* ─────────────────────────────────────────────
    ÍCONES SVG INLINE

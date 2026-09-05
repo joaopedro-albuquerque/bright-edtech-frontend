@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { signOut, fetchAuthSession } from 'aws-amplify/auth';
 import './Sidebar.css';
 import logoBright from '../assets/Logo-Edtech.png';
+import { API_BASE } from '../config';
 
 /* ── Ícones SVG inline (sem dependência externa) ── */
 const icons = {
@@ -66,7 +67,7 @@ const navItems = [
   { to: '/quizzes',     label: 'Gestão de Questionários', icon: icons.quizzes },
 ];
 
-const API_BASE = 'http://ALB-bright-edtech-backend-1682576082.us-east-1.elb.amazonaws.com';
+// API_BASE imported from config
 
 export default function Sidebar({ collapsed, onToggle }) {
   const navigate = useNavigate();

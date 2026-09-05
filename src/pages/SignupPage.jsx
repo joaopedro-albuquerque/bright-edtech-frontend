@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import './SignupPage.css';
 import imageLogin from '../assets/ImageLogin.png';
 import logo from '../assets/Logo-Edtech.png';
+import { API_BASE } from '../config';
 
 export default function SignUpPage() {
   const [firstName, setFirstName]   = useState('');
@@ -76,7 +77,7 @@ export default function SignUpPage() {
       // 2. SEGUNDO PASSO: Se a AWS aprovou, salva no seu banco de dados
       // Usamos um try/catch isolado aqui só para a sua API não interferir nos erros da AWS
       try {
-        await fetch('http://ALB-bright-edtech-backend-1682576082.us-east-1.elb.amazonaws.com/profile/', {
+        await fetch(`${API_BASE}/profile/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
