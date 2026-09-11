@@ -61,10 +61,9 @@ const icons = {
 };
 
 const navItems = [
-  { to: '/dashboard',   label: 'Visão Geral',                  icon: icons.overview   },
-  { to: '/documents',   label: 'Gestão de Documentos', icon: icons.documents  },
-  { to: '/flashcards',  label: 'Criação de Flashcards',         icon: icons.flashcards },
-  { to: '/quizzes',     label: 'Gestão de Questionários', icon: icons.quizzes },
+  { to: '/dashboard',   label: 'Visão Geral',           icon: icons.overview   },
+  { to: '/documents',   label: 'Gestão de Documentos',  icon: icons.documents  },
+  { to: '/flashcards',  label: 'Flashcards / Quizzes',  icon: icons.flashcards },
 ];
 
 // API_BASE imported from config
@@ -83,7 +82,7 @@ export default function Sidebar({ collapsed, onToggle }) {
         const token = session.tokens.idToken.toString();
 
         // 2. Busca o perfil no banco de dados do seu amigo
-        const res = await fetch(`${API_BASE}/profile/`, {
+        const res = await fetch(`${API_BASE}/profile`, {
           method: 'GET',
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -91,7 +90,7 @@ export default function Sidebar({ collapsed, onToggle }) {
         if (res.ok) {
           const data = await res.json();
           // 3. Junta o nome e sobrenome e joga na tela
-          setUserName(`${data.nome} ${data.sobrenome}`);
+          setUserName(data.nome?.split(' ')[0] || 'Aluno');
         } else {
           setUserName('Aluno'); // Nome padrão caso a API falhe
         }

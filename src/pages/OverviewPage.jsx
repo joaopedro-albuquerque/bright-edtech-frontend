@@ -109,7 +109,7 @@ export default function OverviewPage() {
         fetch(`${API_BASE}/profile/${userId}/dashboard`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch(`${API_BASE}/profile/`, {
+        fetch(`${API_BASE}/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         })
       ]);
@@ -123,7 +123,7 @@ export default function OverviewPage() {
       // Salva o Nome vindo do Perfil
       if (resProf.ok) {
         const profData = await resProf.json();
-        setUserName(profData.nome || 'Aluno');
+        setUserName(profData.nome?.split(' ')[0] || 'Aluno');
       } else {
         setUserName('Aluno');
       }
@@ -219,7 +219,7 @@ export default function OverviewPage() {
           <span className="ov-header__time">{getGreeting()}</span>
         </div>
         <h1 className="ov-header__title">
-          {userName}<span className="ov-header__dot">.</span>
+          {userName}
         </h1>
         <p className="ov-header__sub">
           Sua IA já processou os novos materiais. Por onde vamos começar hoje?

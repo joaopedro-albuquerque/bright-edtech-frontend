@@ -14,6 +14,7 @@ export default function SignUpPage() {
   const [showPass, setShowPass]     = useState(false);
   const [confirmCode, setConfirmCode] = useState('');
   const [cognitoId, setCognitoId] = useState('');
+  const [cognitoConfirmed, setCognitoConfirmed] = useState(false);
 
   // step 1 = formulário | step 2 = confirmação de e-mail
   const [step, setStep]         = useState(1);
@@ -70,38 +71,37 @@ export default function SignUpPage() {
     setErrorMsg('');
 
     try {
-      // 1. PRIMEIRO PASSO: Confirma o código com a AWS 
-      // (Isso é o que vai gerar os erros da AWS ali embaixo caso o aluno digite errado)
-      await confirmSignUp({ username: email, confirmationCode: confirmCode });
+      // Só confirma no Cognito se ainda não foi confirmado
+      if (!cognitoConfirmed) {
+        await confirmSignUp({ username: email, confirmationCode: confirmCode });
+        setCognitoConfirmed(true);
+      }
 
-      // 2. SEGUNDO PASSO: Se a AWS aprovou, salva no seu banco de dados
-      // Usamos um try/catch isolado aqui só para a sua API não interferir nos erros da AWS
+      // Salva no banco — obrigatório para evitar conta fantasma
       try {
-        await fetch(`${API_BASE}/profile/`, {
+        const res = await fetch(`${API_BASE}/profile`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email: email,
             nome: `${firstName} ${lastName}`,
-            estilo_preferido: "", 
+            estilo_preferido: "",
             formato_preferido: "",
             objetivos_estudo: "",
             cognito_id: cognitoId
           }),
         });
-      } catch (dbError) {
-        console.error('Aviso: Perfil criado na AWS, mas falhou ao salvar no seu banco', dbError);
+        if (!res.ok) throw new Error('db_error');
+      } catch {
+        setErrorMsg('Conta verificada, mas houve um erro ao salvar seu perfil. Clique em "Confirmar e-mail" para tentar novamente.');
+        return;
       }
 
-      // 3. TERCEIRO PASSO: Deu tudo certo, manda o aluno para o login!
       navigate('/login', {
         state: { message: 'Conta criada com sucesso! Faça seu login.' },
       });
 
     } catch (error) {
-      // 4. Suas verificações originais de erro da AWS continuam intocadas aqui embaixo!
       console.error('Erro na confirmação:', error);
       if (error.name === 'CodeMismatchException') {
         setErrorMsg('Código inválido. Confira o e-mail e tente novamente.');
