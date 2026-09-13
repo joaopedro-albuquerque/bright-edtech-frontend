@@ -1,16 +1,19 @@
-name: Deploy Frontend to S3
+name: Deploy Frontend
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch: {}
 
 env:
   AWS_REGION: us-east-1
+  S3_BUCKET: prod-brightedtech-frontend-cf-818651033737
+  CLOUDFRONT_DISTRIBUTION_ID: E1GZDEJADF7JN
+
+permissions:
+  contents: read
 
 jobs:
-  build-and-deploy:
-    name: Build & Sync to S3
+  deploy:
+    name: Build e Deploy pro S3 + CloudFront
     runs-on: ubuntu-latest
 
     steps:
@@ -21,12 +24,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: "npm"
 
-      - name: Instalar dependências e Build
-        run: |
-          npm ci
-          npm run build
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Build
+        run: npm run build
 
       - name: Configurar credenciais AWS
         uses: aws-actions/configure-aws-credentials@v4
@@ -35,6 +39,16 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Sincronizar ficheiros com o S3
+      - name: Sincronizar dist/ com o S3
         run: |
-          aws s3 sync ./dist s3://${{ secrets.S3_BUCKET_NAME }} --delete
+          aws s3 sync ./dist "s3://$S3_BUCKET" --delete
+
+      - name: Invalidar cache do CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
+            --paths "/*"
+
+      - name: Resumo
+        run: |
+          echo "Deploy concluído. Site disponível em https://brightedtech.com.br"

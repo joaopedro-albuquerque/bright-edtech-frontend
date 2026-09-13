@@ -530,3 +530,193 @@
   to { transform: rotate(360deg); }
 }
 .fq-spin { animation: fqSpin 0.7s linear infinite; }
+
+/* ── Item clickable + play icon ── */
+.fq-item--clickable { cursor: pointer; }
+
+.fq-item__right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.fq-item__play {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(7,13,72,0.07);
+  color: var(--lp-brand-bg, #070D48);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.fq-item--clickable:hover .fq-item__play { opacity: 1; }
+
+/* ══════════════════════════════════════════
+   MODAL DE ESTUDO
+══════════════════════════════════════════ */
+.fq-modal--study { max-width: 540px; }
+
+.fq-study__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 1.4rem;
+  min-height: 0;
+}
+
+/* ── Flip card ── */
+.fq-flashcard {
+  perspective: 1000px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.fq-flashcard__inner {
+  position: relative;
+  width: 100%;
+  min-height: 180px;
+  transition: transform 0.45s;
+  transform-style: preserve-3d;
+}
+
+.fq-flashcard--flipped .fq-flashcard__inner {
+  transform: rotateY(180deg);
+}
+
+.fq-flashcard__front,
+.fq-flashcard__back {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-radius: 14px;
+  border: 1.5px solid rgba(10,21,53,0.10);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.fq-flashcard__front {
+  background: #f5f8ff;
+}
+
+.fq-flashcard__back {
+  background: #f0f9f0;
+  transform: rotateY(180deg);
+}
+
+.fq-flashcard__label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--lp-text-muted, #6b7280);
+}
+
+.fq-flashcard__text {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--lp-text-dark, #0a1535);
+  text-align: center;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.fq-flashcard__hint {
+  margin: 0.75rem 0 0;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  color: var(--lp-text-muted, #6b7280);
+  text-align: center;
+}
+
+/* ── Quiz ── */
+.fq-quiz__question {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--lp-text-dark, #0a1535);
+  line-height: 1.55;
+  margin: 0 0 1.25rem;
+}
+
+.fq-quiz__options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fq-quiz__option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid rgba(10,21,53,0.10);
+  border-radius: 10px;
+  background: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  color: var(--lp-text-dark, #0a1535);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.fq-quiz__option:hover:not(:disabled) {
+  border-color: rgba(74,144,217,0.4);
+  background: rgba(74,144,217,0.04);
+}
+
+.fq-quiz__option:disabled { cursor: default; }
+
+.fq-quiz__option--correct {
+  border-color: #38a169 !important;
+  background: rgba(56,161,105,0.07) !important;
+  color: #276749;
+}
+
+.fq-quiz__option--wrong {
+  border-color: #e53e3e !important;
+  background: rgba(229,62,62,0.07) !important;
+  color: #c53030;
+}
+
+.fq-quiz__letter {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(10,21,53,0.07);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.fq-quiz__option--correct .fq-quiz__letter { background: rgba(56,161,105,0.15); }
+.fq-quiz__option--wrong   .fq-quiz__letter { background: rgba(229,62,62,0.12); }
+
+/* ── Navegação do estudo ── */
+.fq-study__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 1rem 1.4rem 1.4rem;
+  border-top: 1px solid rgba(10,21,53,0.08);
+}
+
