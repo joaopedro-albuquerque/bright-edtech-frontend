@@ -102,31 +102,23 @@ export default function OverviewPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const { token, userId } = await getAuthHeaders();
-      
-      // Dispara as duas requisições ao mesmo tempo para ser mais rápido
-      const [resDash, resProf] = await Promise.all([
-        fetch(`${API_BASE}/profile/${userId}/dashboard`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_BASE}/profile`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-      ]);
+      const { token } = await getAuthHeaders();
 
+      // 1. Busca perfil para obter o UUID do banco e o nome
+      const resProf = await fetch(`${API_BASE}/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!resProf.ok) throw new Error(`Erro ${resProf.status}: não foi possível carregar o perfil.`);
+      const profData = await resProf.json();
+      setUserName(profData.nome?.split(' ')[0] || 'Aluno');
+
+      // 2. Usa o UUID do banco (profData.id) para chamar o dashboard
+      const resDash = await fetch(`${API_BASE}/profile/${profData.id}/dashboard`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!resDash.ok) throw new Error(`Erro ${resDash.status}: não foi possível carregar o dashboard.`);
-      
-      // Salva os dados do Dashboard
       const dashData = await resDash.json();
       setDashboardData(dashData);
-
-      // Salva o Nome vindo do Perfil
-      if (resProf.ok) {
-        const profData = await resProf.json();
-        setUserName(profData.nome?.split(' ')[0] || 'Aluno');
-      } else {
-        setUserName('Aluno');
-      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -165,7 +157,7 @@ export default function OverviewPage() {
     },
     {
       key:   'quizzes',
-      label: 'Questionários',
+      label: 'Quizzes',
       value: total_quizzes,
       icon:  Icon.quiz,
       color: 'violet',
@@ -296,20 +288,20 @@ export default function OverviewPage() {
             ))}
           </ActivityPanel>
 
-          {/* Questionários recentes */}
+          {/* Quizzes recentes */}
           <ActivityPanel
-            title={<>Últimos<br />Questionários</>}
+            title={<>Últimos<br />Quizzes</>}
             icon={Icon.quiz}
             color="violet"
             ctaLabel="Ver todos"
-            ctaTo="/quizzes"
-            emptyLabel="Nenhum questionário recente"
-            emptyHint="Gere questionários para testar seu conhecimento."
+            ctaTo="/flashcards"
+            emptyLabel="Nenhum quiz recente"
+            emptyHint="Gere quizzes para testar seu conhecimento."
           >
             {ultimos_quizzes.map((item) => (
               <ActivityItem
                 key={item.id}
-                title={item.titulo ?? item.nome ?? 'Questionário'}
+                title={item.titulo ?? item.nome ?? 'Quiz'}
                 meta={formatDate(item.criado_em)}
                 icon={Icon.clock}
               />

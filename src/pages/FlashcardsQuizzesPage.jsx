@@ -90,6 +90,12 @@ const Icon = {
       <path d="M3 2l9 5-9 5V2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
     </svg>
   ),
+  trash: (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path d="M2 4h10M5 4V2.5h4V4M5.5 6.5v4M8.5 6.5v4M3 4l.75 7.5h6.5L11 4"
+        stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  ),
 };
 
 /* ─────────────────────────────────────────────
@@ -156,6 +162,10 @@ export default function FlashcardsQuizzesPage() {
   const [cardIndex,      setCardIndex]      = useState(0);
   const [flipped,        setFlipped]        = useState(false);
   const [answered,       setAnswered]       = useState(null);
+
+  // ── Exclusão ──
+  const [deleteTarget, setDeleteTarget] = useState(null); // { id, tipo, titulo }
+  const [isDeleting,   setIsDeleting]   = useState(false);
 
   /* ── Carrega listas + revisões ── */
   const load = useCallback(async () => {
@@ -356,6 +366,36 @@ export default function FlashcardsQuizzesPage() {
 
   const closeModal = () => { if (!isCreating) setShowModal(null); };
 
+  /* ── Exclui flashcard ou quiz ── */
+  const deleteItem = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      const { token } = await getAuthHeaders();
+      const id = dbUserId || await getDbUserId(token);
+      const endpoint = deleteTarget.tipo === 'flashcard'
+        ? `${API_BASE}/flashcards/${deleteTarget.id}`
+        : `${API_BASE}/quizzes/${deleteTarget.id}`;
+      const res = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}`, 'X-User-Id': id },
+      });
+      if (!res.ok) throw new Error(`Erro ${res.status} ao excluir.`);
+      if (deleteTarget.tipo === 'flashcard') {
+        setFlashcards(prev => prev.filter(f => f.id !== deleteTarget.id));
+        setTotals(prev => ({ ...prev, flashcards: Math.max(0, prev.flashcards - 1) }));
+      } else {
+        setQuizzes(prev => prev.filter(q => q.id !== deleteTarget.id));
+        setTotals(prev => ({ ...prev, quizzes: Math.max(0, prev.quizzes - 1) }));
+      }
+      setDeleteTarget(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   /* ── Dados da tab ativa ── */
   const items    = activeTab === 'flashcards' ? flashcards : quizzes;
   const dueCount = items.filter(i => dueIds.has(i.id)).length;
@@ -443,12 +483,11 @@ export default function FlashcardsQuizzesPage() {
         <ul className="fq-list">
           {items.map(item => {
             const isDue = dueIds.has(item.id);
+            const tipo  = activeTab === 'flashcards' ? 'flashcard' : 'quiz';
             return (
               <li
                 key={item.id}
-                className={`fq-item fq-item--clickable${isDue ? ' fq-item--due' : ''}`}
-                onClick={() => openStudy(item, activeTab === 'flashcards' ? 'flashcard' : 'quiz')}
-                title="Clique para estudar"
+                className={`fq-item${isDue ? ' fq-item--due' : ''}`}
               >
                 <div className="fq-item__icon">
                   {activeTab === 'flashcards' ? Icon.flashcard : Icon.quiz}
@@ -461,7 +500,20 @@ export default function FlashcardsQuizzesPage() {
                 </div>
                 <div className="fq-item__right">
                   {isDue && <span className="fq-item__due-badge">Revisar hoje</span>}
-                  <span className="fq-item__play">{Icon.play}</span>
+                  <button
+                    className="fq-btn fq-btn--secondary fq-item__view-btn"
+                    onClick={() => openStudy(item, tipo)}
+                  >
+                    {Icon.play}
+                    Visualizar {activeTab === 'flashcards' ? 'Flashcard' : 'Quiz'}
+                  </button>
+                  <button
+                    className="fq-item__delete-btn"
+                    onClick={() => setDeleteTarget({ id: item.id, tipo, titulo: item.titulo })}
+                    title="Excluir"
+                  >
+                    {Icon.trash}
+                  </button>
                 </div>
               </li>
             );
@@ -657,6 +709,47 @@ export default function FlashcardsQuizzesPage() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════
+          MODAL — Confirmar exclusão
+      ══════════════════════════════════════════ */}
+      {deleteTarget && (
+        <div className="fq-overlay" onClick={() => !isDeleting && setDeleteTarget(null)} role="dialog" aria-modal="true">
+          <div className="fq-modal" onClick={e => e.stopPropagation()}>
+            <div className="fq-modal__header">
+              <div className="fq-modal__header-icon">
+                {deleteTarget.tipo === 'flashcard' ? Icon.flashcard : Icon.quiz}
+              </div>
+              <div>
+                <h2 className="fq-modal__title">
+                  Excluir {deleteTarget.tipo === 'flashcard' ? 'Flashcard' : 'Quiz'}
+                </h2>
+                <p className="fq-modal__subtitle">Esta ação não pode ser desfeita.</p>
+              </div>
+              <button className="fq-modal__close" onClick={() => setDeleteTarget(null)} disabled={isDeleting} aria-label="Fechar">
+                {Icon.close}
+              </button>
+            </div>
+            <div className="fq-modal__body">
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.9rem', color: '#374151', lineHeight: 1.6, margin: 0 }}>
+                Tem certeza que deseja excluir <strong>"{deleteTarget.titulo}"</strong>?
+              </p>
+            </div>
+            <div className="fq-modal__footer">
+              <button className="fq-btn fq-btn--ghost" onClick={() => setDeleteTarget(null)} disabled={isDeleting}>
+                Cancelar
+              </button>
+              <button
+                className={`fq-btn fq-btn--danger${isDeleting ? ' fq-btn--loading' : ''}`}
+                onClick={deleteItem}
+                disabled={isDeleting}
+              >
+                {isDeleting ? <>{Icon.spinner} Excluindo...</> : 'Excluir'}
+              </button>
+            </div>
           </div>
         </div>
       )}

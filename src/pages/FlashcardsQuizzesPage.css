@@ -531,9 +531,17 @@
 }
 .fq-spin { animation: fqSpin 0.7s linear infinite; }
 
-/* ── Item clickable + play icon ── */
-.fq-item--clickable { cursor: pointer; }
+.fq-btn--danger {
+  background: #e53e3e;
+  color: #fff;
+}
+.fq-btn--danger:hover:not(:disabled) {
+  background: #c53030;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(229,62,62,0.3);
+}
 
+/* ── Grupo de ações à direita do item ── */
 .fq-item__right {
   display: flex;
   align-items: center;
@@ -541,20 +549,35 @@
   flex-shrink: 0;
 }
 
-.fq-item__play {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(7,13,72,0.07);
-  color: var(--lp-brand-bg, #070D48);
-  opacity: 0;
-  transition: opacity 0.15s;
+/* ── Botão "Visualizar" inline no item ── */
+.fq-item__view-btn {
+  font-size: 0.8rem;
+  padding: 0.4rem 0.85rem;
+  gap: 0.35rem;
+  white-space: nowrap;
 }
 
-.fq-item--clickable:hover .fq-item__play { opacity: 1; }
+/* ── Botão excluir (ícone circulado) ── */
+.fq-item__delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: none;
+  border: 1.5px solid rgba(10,21,53,0.12);
+  color: var(--lp-text-muted, #6b7280);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.fq-item__delete-btn:hover {
+  background: rgba(229,62,62,0.08);
+  color: #c53030;
+  border-color: rgba(229,62,62,0.3);
+}
 
 /* ══════════════════════════════════════════
    MODAL DE ESTUDO

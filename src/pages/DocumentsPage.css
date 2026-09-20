@@ -278,7 +278,7 @@
 ───────────────────────────────────────── */
 .dp-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 260px));
   gap: 0.85rem;
 }
 
@@ -625,6 +625,171 @@
 .dp-spin { animation: dpSpin 0.75s linear infinite; }
 
 @keyframes dpSpin    { to { transform: rotate(360deg); } }
+
+/* ═══════════════════════════════════════════
+   LISTA DE ARQUIVOS (novo layout)
+═══════════════════════════════════════════ */
+.dp-file-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.dp-file-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--dp-card-bg);
+  border: 1px solid var(--dp-card-border);
+  border-radius: var(--dp-radius);
+  box-shadow: var(--dp-shadow);
+  transition: box-shadow 0.18s, border-color 0.18s;
+}
+
+.dp-file-item:hover {
+  box-shadow: var(--dp-shadow-hover);
+  border-color: rgba(74, 144, 217, 0.22);
+}
+
+.dp-file-item--generating { opacity: 0.75; }
+
+/* Área clicável com nome do arquivo */
+.dp-file-item__name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+.dp-file-item__file-icon {
+  flex-shrink: 0;
+  color: var(--lp-text-muted, #6b7280);
+}
+
+.dp-file-item__label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--lp-text-dark, #0a1535);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dp-file-item__name:hover .dp-file-item__label {
+  color: var(--lp-primary, #4A90D9);
+  text-decoration: underline;
+}
+
+/* Grupo de botões à direita */
+.dp-file-item__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+/* ── Botão IA (estrela/sparkle) ── */
+.dp-file-item__ai-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #7C3AED, #EC4899);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.18s, transform 0.15s;
+  flex-shrink: 0;
+}
+
+.dp-file-item__ai-btn:hover:not(:disabled) {
+  opacity: 0.88;
+  transform: scale(1.08);
+}
+
+.dp-file-item__ai-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── Badges de contagem ── */
+.dp-file-item__count {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.28rem 0.65rem;
+  border-radius: 100px;
+  white-space: nowrap;
+  border: 1.5px solid;
+  user-select: none;
+}
+
+.dp-file-item__count--resumos {
+  color: #c53030;
+  background: rgba(229, 62, 62, 0.06);
+  border-color: rgba(229, 62, 62, 0.32);
+}
+
+.dp-file-item__count--flashcards {
+  color: #0369a1;
+  background: rgba(6, 182, 212, 0.06);
+  border-color: rgba(6, 182, 212, 0.32);
+}
+
+.dp-file-item__count--quizzes {
+  color: #15803d;
+  background: rgba(34, 197, 94, 0.06);
+  border-color: rgba(34, 197, 94, 0.32);
+}
+
+/* ── Botões de ícone (editar / excluir) ── */
+.dp-file-item__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: none;
+  border: 1.5px solid rgba(10, 21, 53, 0.12);
+  color: var(--lp-text-muted, #6b7280);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.dp-file-item__icon-btn:hover:not(:disabled) {
+  background: rgba(10, 21, 53, 0.06);
+  color: var(--lp-text-dark, #0a1535);
+  border-color: rgba(10, 21, 53, 0.22);
+}
+
+.dp-file-item__icon-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.dp-file-item__icon-btn--danger:hover:not(:disabled) {
+  background: rgba(229, 62, 62, 0.08);
+  color: #c53030;
+  border-color: rgba(229, 62, 62, 0.3);
+}
+
+/* Responsividade: esconde badges em telas pequenas */
+@media (max-width: 640px) {
+  .dp-file-item__count { display: none; }
+  .dp-file-item { flex-wrap: nowrap; }
+}
 @keyframes dpFadeIn  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes dpSlideUp {
   from { opacity: 0; transform: translateY(16px) scale(0.98); }

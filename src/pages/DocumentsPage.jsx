@@ -64,6 +64,14 @@ const Icon = {
       <path d="M9 2a7 7 0 0 1 7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   ),
+  ai: (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M10 2 L11.8 7.2 L17 9 L11.8 10.8 L10 16 L8.2 10.8 L3 9 L8.2 7.2 Z"
+        stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+      <path d="M16 1 L16.9 3.1 L19 4 L16.9 4.9 L16 7 L15.1 4.9 L13 4 L15.1 3.1 Z"
+        fill="currentColor"/>
+    </svg>
+  ),
 };
 
 /* ─────────────────────────────────────────────
@@ -132,6 +140,12 @@ export default function DocumentsPage() {
   const [openMenuId, setOpenMenuId] = useState(null); // id da pasta com menu aberto
   const menuRef = useRef(null);
 
+  // ── Estados para documentos (lista + contagens) ──
+  const [fileCounts,       setFileCounts]       = useState({}); // { [fileId]: { resumos, flashcards, quizzes } }
+  const [renameFileTarget, setRenameFileTarget] = useState(null); // { id, nome }
+  const [renameFileName,   setRenameFileName]   = useState('');
+  const [deleteFileTarget, setDeleteFileTarget] = useState(null); // { id, nome }
+
   /* ── Fecha o menu ao clicar fora ── */
   useEffect(() => {
     function handleClick(e) {
@@ -191,7 +205,12 @@ export default function DocumentsPage() {
       setCurrentFolderId(folder.id);
       setBreadcrumb((prev) => [...prev, { id: folder.id, nome: folder.nome }]);
       setFolders(data.subpastas ?? []);
-      setFiles(data.arquivos ?? []);
+      const filesData = data.arquivos ?? [];
+      setFiles(filesData);
+      setFileCounts({});
+      if (filesData.length > 0 && dbUserId) {
+        loadFileCounts(filesData, token, dbUserId);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -299,69 +318,131 @@ export default function DocumentsPage() {
   };
 
   /* ─────────────────────────────────────────
+     CARREGAR CONTAGENS POR DOCUMENTO
+  ───────────────────────────────────────── */
+  const loadFileCounts = useCallback(async (files, token, userId) => {
+    if (!files.length || !userId) return;
+    const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': userId };
+    const results = await Promise.all(
+      files.map(async (file) => {
+        const [rRes, fRes, qRes] = await Promise.all([
+          fetch(`${API_BASE}/documentos/${file.id}/resumos`,   { headers }),
+          fetch(`${API_BASE}/documentos/${file.id}/flashcards`, { headers }),
+          fetch(`${API_BASE}/documentos/${file.id}/quizzes`,    { headers }),
+        ]);
+        const [resumos, flashcards, quizzes] = await Promise.all([
+          rRes.ok ? rRes.json() : [],
+          fRes.ok ? fRes.json() : [],
+          qRes.ok ? qRes.json() : [],
+        ]);
+        return { id: file.id, resumos: resumos.length, flashcards: flashcards.length, quizzes: quizzes.length };
+      })
+    );
+    const counts = {};
+    results.forEach(r => { counts[r.id] = r; });
+    setFileCounts(counts);
+  }, []);
+
+  /* ─────────────────────────────────────────
+     RENOMEAR DOCUMENTO
+  ───────────────────────────────────────── */
+  const renameDocument = async () => {
+    if (!renameFileName.trim() || !renameFileTarget) return;
+    setIsSaving(true);
+    try {
+      const { token } = await getAuthHeaders();
+      const formData = new FormData();
+      formData.append('nome', renameFileName.trim());
+      const res = await fetch(`${API_BASE}/documentos/${renameFileTarget.id}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível renomear.`);
+      const updated = await res.json();
+      const newName = updated.nome_documento ?? updated.nome ?? renameFileName.trim();
+      setFiles(prev => prev.map(f =>
+        f.id === renameFileTarget.id ? { ...f, nome_documento: newName, nome: newName } : f
+      ));
+      setRenameFileTarget(null);
+      setRenameFileName('');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  /* ─────────────────────────────────────────
+     EXCLUIR DOCUMENTO
+  ───────────────────────────────────────── */
+  const deleteDocument = async () => {
+    if (!deleteFileTarget) return;
+    setIsSaving(true);
+    try {
+      const { token } = await getAuthHeaders();
+      const bankUserId = dbUserId || await getBankUserId(token);
+      const res = await fetch(`${API_BASE}/documentos/${deleteFileTarget.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}`, 'X-User-Id': bankUserId },
+      });
+      if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível excluir o documento.`);
+      setFiles(prev => prev.filter(f => f.id !== deleteFileTarget.id));
+      setDeleteFileTarget(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  /* ─────────────────────────────────────────
    GERAR RESUMO COM IA
 ───────────────────────────────────────── */
   const handleGenerateSummary = async (file) => {
-    setOpenMenuId(null);
     setIsGenerating(true);
     setGeneratingFileId(file.id);
     setError(null);
 
     try {
       const { token } = await getAuthHeaders();
-      const bankUserId = await getBankUserId(token);
-
+      const bankUserId = dbUserId || await getBankUserId(token);
       if (!bankUserId) throw new Error('Não foi possível obter o ID do usuário.');
 
-      // 1. Tenta buscar resumo existente (passa usuario_id via header)
-      const getRes = await fetch(`${API_BASE}/resumos/${file.id}`, {
-        method: 'GET',
-        headers: { 
-          'Content-Type': 'application/json',
-          'X-User-Id': bankUserId
-        },
-      });
+      const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': bankUserId };
 
-      console.log('GET Status:', getRes.status);
+      // 1. Verifica se já existe resumo para este documento
+      const listRes = await fetch(`${API_BASE}/documentos/${file.id}/resumos`, { headers });
+      const existingList = listRes.ok ? await listRes.json() : [];
 
-      if (getRes.ok) {
-        // Resumo já existe
-        const summaryData = await getRes.json();
-        console.log('✓ Resumo existente encontrado:', summaryData);
-        setSummaryText(summaryData.resumo || 'Nenhum conteúdo de resumo.');
-        setSummaryFileName(file.nome_documento ?? file.nome);
-        setShowSummaryModal(true);
-      } else if (getRes.status === 404) {
-        // Resumo não existe, criar novo
-        console.log('Resumo não encontrado (404), criando novo...');
-        const formData = new FormData();
-        formData.append('usuario_id', bankUserId);
-        formData.append('pasta_id', currentFolderId);
-        formData.append('arquivo', file.id);
-
-        const postRes = await fetch(`${API_BASE}/resumos`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: formData,
-        });
-
-        console.log('POST /resumos status:', postRes.status);
-
-        if (!postRes.ok) throw new Error(`Erro ${postRes.status}: não foi possível gerar o resumo.`);
-        
-        const newSummary = await postRes.json();
-        console.log('✓ Novo resumo criado:', newSummary);
-        setSummaryText(newSummary.resumo || 'Nenhum conteúdo de resumo.');
-        setSummaryFileName(file.nome_documento ?? file.nome);
-        setShowSummaryModal(true);
+      let resumoId;
+      if (existingList.length > 0) {
+        resumoId = existingList[0].id;
       } else {
-        // Erro diferente de 200/404
-        const errorText = await getRes.text();
-        console.error('❌ Erro na resposta:', getRes.status, errorText);
-        throw new Error(`Erro ${getRes.status}: ${errorText || 'não foi possível recuperar o resumo.'}`);
+        // Gera novo resumo via Bedrock
+        const postRes = await fetch(`${API_BASE}/documentos/${file.id}/resumos`, {
+          method: 'POST',
+          headers: { ...headers, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nivel_conhecimento: 3, formato: 'cornell', tom: 'direto e claro' }),
+        });
+        if (!postRes.ok) throw new Error(`Erro ${postRes.status}: não foi possível gerar o resumo.`);
+        const created = await postRes.json();
+        resumoId = created.id;
+        // Atualiza contagem localmente
+        setFileCounts(prev => ({
+          ...prev,
+          [file.id]: { ...(prev[file.id] || { flashcards: 0, quizzes: 0 }), resumos: (prev[file.id]?.resumos ?? 0) + 1 },
+        }));
       }
+
+      // 2. Busca conteúdo do resumo
+      const contentRes = await fetch(`${API_BASE}/resumos/${resumoId}/conteudo`, { headers });
+      if (!contentRes.ok) throw new Error(`Erro ${contentRes.status}: não foi possível ler o resumo.`);
+      const contentData = await contentRes.json();
+
+      setSummaryText(contentData.conteudo || 'Nenhum conteúdo de resumo.');
+      setSummaryFileName(file.nome_documento ?? file.nome);
+      setShowSummaryModal(true);
     } catch (err) {
       console.error('CATCH:', err);
       setError(err.message);
@@ -571,7 +652,7 @@ export default function DocumentsPage() {
                     <span className="dp-card__meta">
                       {folder.total_arquivos != null
                         ? `${folder.total_arquivos} arquivo${folder.total_arquivos !== 1 ? 's' : ''}`
-                        : '—'}
+                        : ''}
                     </span>
                   </div>
                   {folder.criado_em && (
@@ -625,80 +706,77 @@ export default function DocumentsPage() {
         </section>
       )}
 
-      {/* ── Grade de arquivos (dentro de uma pasta) ── */}
+      {/* ── Lista de arquivos (dentro de uma pasta) ── */}
       {!isLoading && files.length > 0 && (
         <section className="dp-section">
           <h2 className="dp-section__label">Arquivos</h2>
-          <div className="dp-grid">
+          <ul className="dp-file-list">
             {files.map((file) => {
               const isThisGenerating = isGenerating && generatingFileId === file.id;
-
+              const counts = fileCounts[file.id];
+              const displayName = file.nome_documento ?? file.nome;
               return (
-                <div
+                <li
                   key={file.id}
-                  className={`dp-card dp-card--file${openMenuId === file.id ? ' dp-card--menu-open' : ''}`}
+                  className={`dp-file-item${isThisGenerating ? ' dp-file-item--generating' : ''}`}
                 >
-                  {/* Corpo do card */}
+                  {/* Nome do arquivo (clicável para visualizar) */}
                   <button
-                    className="dp-card__body dp-card__body--file"
+                    className="dp-file-item__name"
                     onClick={() => handleOpenDocument(file)}
-                    style={{ textAlign: 'left', width: '100%', border: 'none', background: 'transparent', cursor: 'pointer' }}
-                    title="Clique para abrir o documento"
+                    title="Clique para visualizar o documento"
                   >
-                    <div className="dp-card__icon dp-card__icon--file">{Icon.file}</div>
-                    <div className="dp-card__info">
-                      <span className="dp-card__name">{file.nome_documento ?? file.nome}</span>
-                      <span className="dp-card__meta">{file.tipo ?? 'Documento'}</span>
-                    </div>
-                    {file.criado_em && (
-                      <span className="dp-card__date">Enviado em {formatDate(file.criado_em)}</span>
-                    )}
+                    <span className="dp-file-item__file-icon">{Icon.file}</span>
+                    <span className="dp-file-item__label">{displayName}</span>
                   </button>
 
-                  {/* Faixa de "gerando…" — substitui o botão ⋮ enquanto processa */}
-                  {isThisGenerating && (
-                    <div className="dp-card__generating">
-                      <span className="dp-btn-spinner" aria-hidden="true" />
-                      Gerando resumo…
-                    </div>
-                  )}
-
-                  {/* Menu de ações ⋮ — só aparece quando NÃO está gerando */}
-                  {!isThisGenerating && (
-                    <div
-                      className="dp-card__menu-wrap"
-                      ref={openMenuId === file.id ? menuRef : null}
+                  {/* Botões de ação */}
+                  <div className="dp-file-item__actions">
+                    {/* Botão IA — gerar resumo */}
+                    <button
+                      className="dp-file-item__ai-btn"
+                      onClick={() => handleGenerateSummary(file)}
+                      disabled={isGenerating}
+                      title="Gerar resumo com IA"
                     >
-                      <button
-                        className="dp-card__menu-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenMenuId((prev) => prev === file.id ? null : file.id);
-                        }}
-                        aria-label="Opções do arquivo"
-                        aria-expanded={openMenuId === file.id}
-                        disabled={isGenerating}   // bloqueia todos enquanto um está gerando
-                      >
-                        {Icon.more}
-                      </button>
+                      {isThisGenerating ? Icon.spinner : Icon.ai}
+                    </button>
 
-                      {openMenuId === file.id && (
-                        <div className="dp-dropdown" role="menu">
-                          <button
-                            className="dp-dropdown__item dp-dropdown__item--ai"
-                            role="menuitem"
-                            onClick={() => handleGenerateSummary(file)}
-                          >
-                            ✨ Gerar Resumo
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                    {/* Badges de contagem */}
+                    <span className="dp-file-item__count dp-file-item__count--resumos">
+                      {counts ? counts.resumos : '?'} Resumos
+                    </span>
+                    <span className="dp-file-item__count dp-file-item__count--flashcards">
+                      {counts ? counts.flashcards : '?'} Flashcards
+                    </span>
+                    <span className="dp-file-item__count dp-file-item__count--quizzes">
+                      {counts ? counts.quizzes : '?'} Quizzes
+                    </span>
+
+                    {/* Editar nome */}
+                    <button
+                      className="dp-file-item__icon-btn"
+                      onClick={() => { setRenameFileTarget({ id: file.id, nome: displayName }); setRenameFileName(displayName); }}
+                      title="Renomear documento"
+                      disabled={isGenerating}
+                    >
+                      {Icon.edit}
+                    </button>
+
+                    {/* Excluir */}
+                    <button
+                      className="dp-file-item__icon-btn dp-file-item__icon-btn--danger"
+                      onClick={() => setDeleteFileTarget({ id: file.id, nome: displayName })}
+                      title="Excluir documento"
+                      disabled={isGenerating}
+                    >
+                      {Icon.trash}
+                    </button>
+                  </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
         </section>
       )}
 
@@ -835,6 +913,48 @@ export default function DocumentsPage() {
           <div className="dp-modal__summary">
             <p className="dp-modal__summary-text">{summaryText}</p>
           </div>
+        </Modal>
+      )}
+
+      {/* Modal: Renomear documento */}
+      {renameFileTarget && (
+        <Modal
+          title="Renomear documento"
+          onClose={() => { setRenameFileTarget(null); setRenameFileName(''); }}
+          onConfirm={renameDocument}
+          confirmLabel="Salvar"
+          isLoading={isSaving}
+          confirmDisabled={!renameFileName.trim()}
+        >
+          <div className="dp-modal__field">
+            <label className="dp-modal__label" htmlFor="rename-file-input">Novo nome</label>
+            <input
+              id="rename-file-input"
+              className="dp-modal__input"
+              type="text"
+              value={renameFileName}
+              onChange={(e) => setRenameFileName(e.target.value)}
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && renameDocument()}
+            />
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal: Confirmar exclusão de documento */}
+      {deleteFileTarget && (
+        <Modal
+          title="Excluir documento"
+          onClose={() => setDeleteFileTarget(null)}
+          onConfirm={deleteDocument}
+          confirmLabel="Excluir"
+          confirmVariant="danger"
+          isLoading={isSaving}
+        >
+          <p className="dp-modal__text">
+            Tem certeza que deseja excluir <strong>"{deleteFileTarget.nome}"</strong>?{' '}
+            Esta ação não pode ser desfeita.
+          </p>
         </Modal>
       )}
 
