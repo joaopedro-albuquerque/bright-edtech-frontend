@@ -783,3 +783,91 @@
   border-top: 1px solid rgba(10,21,53,0.08);
 }
 
+/* ── Barra de avaliação SM-2 (flashcards) ── */
+.fq-rate-bar {
+  display: flex;
+  gap: 0.4rem;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.fq-rate-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.55rem 0.85rem;
+  border-radius: 8px;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.fq-rate-btn:hover { opacity: 0.85; }
+
+.fq-rate-btn--again { background: rgba(229,62,62,0.1);  color: #c53030; border-color: rgba(229,62,62,0.25); }
+.fq-rate-btn--hard   { background: rgba(221,107,32,0.1);  color: #c05621; border-color: rgba(221,107,32,0.25); }
+.fq-rate-btn--good   { background: rgba(56,161,105,0.1);  color: #276749; border-color: rgba(56,161,105,0.25); }
+.fq-rate-btn--easy   { background: rgba(56,161,105,0.18); color: #22543d; border-color: rgba(56,161,105,0.4); }
+
+/* ── Seletor de dificuldade (modal de criação) ── */
+.fq-modal__difficulty {
+  padding: 0 1.4rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.fq-modal__difficulty-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--lp-text-muted, #6b7280);
+}
+
+.fq-modal__difficulty-options {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.fq-difficulty-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(10,21,53,0.12);
+  background: none;
+  color: var(--lp-text-dark, #0a1535);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.fq-difficulty-btn:hover { border-color: rgba(74,144,217,0.4); }
+
+.fq-difficulty-btn--selected {
+  border-color: #4a90d9;
+  background: rgba(74,144,217,0.1);
+  color: #2c5282;
+  font-weight: 600;
+}
+
+/* ── Resultado final do quiz ── */
+.fq-quiz-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+.fq-quiz-summary__score {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1.1rem;
+  color: var(--lp-text-dark, #0a1535);
+  margin: 0;
+}
+
+.fq-quiz-summary__score strong {
+  color: #2c5282;
+  font-size: 1.3rem;
+}
+

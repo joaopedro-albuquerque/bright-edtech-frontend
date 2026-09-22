@@ -189,7 +189,7 @@ export default function OverviewPage() {
       value: total_flashcards,
       icon:  Icon.flashcard,
       color: 'blue',
-      to:    '/flashcards',
+      to:    '/revisao-geral',
     },
     {
       key:   'resumos',
@@ -205,7 +205,7 @@ export default function OverviewPage() {
       value: total_quizzes,
       icon:  Icon.quiz,
       color: 'violet',
-      to:    '/flashcards?tab=quizzes',
+      to:    '/revisao-geral?tab=quizzes',
     },
   ];
 
@@ -265,7 +265,7 @@ export default function OverviewPage() {
           </button>
         </div>
         <p className="ov-header__sub">
-          Sua IA já processou os novos materiais. Por onde vamos começar hoje?
+          Você tem materiais prontos para revisar. Vamos continuar de onde parou?
         </p>
       </header>
 
@@ -346,7 +346,7 @@ export default function OverviewPage() {
             icon={Icon.flashcard}
             color="blue"
             ctaLabel="Ver todos"
-            ctaTo="/flashcards"
+            ctaTo="/revisao-geral"
             emptyLabel="Nenhum flashcard recente"
             emptyHint="Crie flashcards a partir dos seus documentos."
           >
@@ -386,7 +386,7 @@ export default function OverviewPage() {
             icon={Icon.quiz}
             color="violet"
             ctaLabel="Ver todos"
-            ctaTo="/flashcards?tab=quizzes"
+            ctaTo="/revisao-geral?tab=quizzes"
             emptyLabel="Nenhum quiz recente"
             emptyHint="Gere quizzes para testar seu conhecimento."
           >

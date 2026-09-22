@@ -63,7 +63,7 @@ const icons = {
 const navItems = [
   { to: '/dashboard',   label: 'Visão Geral',           icon: icons.overview   },
   { to: '/documents',   label: 'Gestão de Documentos',  icon: icons.documents  },
-  { to: '/flashcards',  label: 'Flashcards / Quizzes',  icon: icons.flashcards },
+  { to: '/revisao-geral',  label: 'Revisão Geral',  icon: icons.flashcards },
 ];
 
 // API_BASE imported from config

@@ -32,6 +32,12 @@ const Icon = {
       <path d="M3 14h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   ),
+  download: (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M9 4v8M5 9l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3 14h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  ),
   back: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -138,6 +144,16 @@ export default function DocumentsPage() {
   const [generatingFileId, setGeneratingFileId] = useState(null);  const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [summaryText, setSummaryText] = useState('');
   const [summaryFileName, setSummaryFileName] = useState('');
+  const [summaryResumoId, setSummaryResumoId] = useState(null);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [newSummaryTarget, setNewSummaryTarget] = useState(null); // file
+  const [newSummaryFormat, setNewSummaryFormat] = useState('cornell');
+
+  const RESUMO_FORMATOS = [
+    { value: 'resumo_executivo',    label: 'Executivo' },
+    { value: 'cornell',             label: 'Cornell' },
+    { value: 'fichamento_academico', label: 'Fichamento' },
+  ];
   const [openMenuId, setOpenMenuId] = useState(null); // id da pasta com menu aberto
   const menuRef = useRef(null);
 
@@ -421,9 +437,11 @@ export default function DocumentsPage() {
   };
 
   /* ─────────────────────────────────────────
-   GERAR RESUMO COM IA
+   GERAR RESUMO COM IA (sempre cria um novo, usuário escolhe o formato)
 ───────────────────────────────────────── */
-  const handleGenerateSummary = async (file) => {
+  const confirmGenerateSummary = async () => {
+    if (!newSummaryTarget) return;
+    const file = newSummaryTarget;
     setIsGenerating(true);
     setGeneratingFileId(file.id);
     setError(null);
@@ -435,37 +453,27 @@ export default function DocumentsPage() {
 
       const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': bankUserId };
 
-      // 1. Verifica se já existe resumo para este documento
-      const listRes = await fetch(`${API_BASE}/documentos/${file.id}/resumos`, { headers });
-      const existingList = listRes.ok ? await listRes.json() : [];
+      const postRes = await fetch(`${API_BASE}/documentos/${file.id}/resumos`, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nivel_conhecimento: 3, formato: newSummaryFormat, tom: 'direto e claro' }),
+      });
+      if (!postRes.ok) throw new Error(`Erro ${postRes.status}: não foi possível gerar o resumo.`);
+      const created = await postRes.json();
 
-      let resumoId;
-      if (existingList.length > 0) {
-        resumoId = existingList[0].id;
-      } else {
-        // Gera novo resumo via Bedrock
-        const postRes = await fetch(`${API_BASE}/documentos/${file.id}/resumos`, {
-          method: 'POST',
-          headers: { ...headers, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nivel_conhecimento: 3, formato: 'cornell', tom: 'direto e claro' }),
-        });
-        if (!postRes.ok) throw new Error(`Erro ${postRes.status}: não foi possível gerar o resumo.`);
-        const created = await postRes.json();
-        resumoId = created.id;
-        // Atualiza contagem localmente
-        setFileCounts(prev => ({
-          ...prev,
-          [file.id]: { ...(prev[file.id] || { flashcards: 0, quizzes: 0 }), resumos: (prev[file.id]?.resumos ?? 0) + 1 },
-        }));
-      }
+      setFileCounts(prev => ({
+        ...prev,
+        [file.id]: { ...(prev[file.id] || { flashcards: 0, quizzes: 0 }), resumos: (prev[file.id]?.resumos ?? 0) + 1 },
+      }));
 
-      // 2. Busca conteúdo do resumo
-      const contentRes = await fetch(`${API_BASE}/resumos/${resumoId}/conteudo`, { headers });
+      const contentRes = await fetch(`${API_BASE}/resumos/${created.id}/conteudo`, { headers });
       if (!contentRes.ok) throw new Error(`Erro ${contentRes.status}: não foi possível ler o resumo.`);
       const contentData = await contentRes.json();
 
       setSummaryText(contentData.conteudo || 'Nenhum conteúdo de resumo.');
       setSummaryFileName(file.nome_documento ?? file.nome);
+      setSummaryResumoId(created.id);
+      setNewSummaryTarget(null);
       setShowSummaryModal(true);
     } catch (err) {
       console.error('CATCH:', err);
@@ -473,6 +481,42 @@ export default function DocumentsPage() {
     } finally {
       setIsGenerating(false);
       setGeneratingFileId(null);
+    }
+  };
+
+  /* ── Visualiza um resumo já gerado (a partir da listagem) ── */
+  const viewResumo = async (item) => {
+    try {
+      const { token } = await getAuthHeaders();
+      const bankUserId = dbUserId || await getBankUserId(token);
+      const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': bankUserId };
+      const res = await fetch(`${API_BASE}/resumos/${item.id}/conteudo`, { headers });
+      if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível ler o resumo.`);
+      const data = await res.json();
+      setSummaryText(data.conteudo || 'Nenhum conteúdo de resumo.');
+      setSummaryFileName(item.titulo);
+      setSummaryResumoId(item.id);
+      setShowSummaryModal(true);
+    } catch (err) {
+      setContentModalError(err.message);
+    }
+  };
+
+  /* ── Baixa o PDF de um resumo (gerado sob demanda se ainda não existir) ── */
+  const downloadResumoPdf = async (resumoId) => {
+    setIsDownloadingPdf(true);
+    try {
+      const { token } = await getAuthHeaders();
+      const bankUserId = dbUserId || await getBankUserId(token);
+      const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': bankUserId };
+      const res = await fetch(`${API_BASE}/resumos/${resumoId}/download`, { headers });
+      if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível gerar o PDF.`);
+      const data = await res.json();
+      if (data.url) window.open(data.url, '_blank');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsDownloadingPdf(false);
     }
   };
 
@@ -843,9 +887,9 @@ export default function DocumentsPage() {
                     {/* Botão IA — gerar resumo */}
                     <button
                       className="dp-file-item__ai-btn"
-                      onClick={() => handleGenerateSummary(file)}
+                      onClick={() => { setNewSummaryTarget(file); setNewSummaryFormat('cornell'); }}
                       disabled={isGenerating}
-                      title="Gerar resumo com IA"
+                      title="Gerar novo resumo com IA"
                     >
                       {isThisGenerating ? Icon.spinner : Icon.ai}
                     </button>
@@ -1021,15 +1065,52 @@ export default function DocumentsPage() {
         </Modal>
       )}
 
+      {/* Modal: Novo Resumo (escolha de formato) */}
+      {newSummaryTarget && (
+        <Modal
+          title="Novo Resumo"
+          onClose={() => !isGenerating && setNewSummaryTarget(null)}
+          onConfirm={confirmGenerateSummary}
+          confirmLabel="Gerar"
+          isLoading={isGenerating}
+        >
+          <div className="dp-modal__field">
+            <label className="dp-modal__label">Formato do resumo</label>
+            <div className="dp-format-options">
+              {RESUMO_FORMATOS.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`dp-format-btn${newSummaryFormat === opt.value ? ' dp-format-btn--selected' : ''}`}
+                  onClick={() => setNewSummaryFormat(opt.value)}
+                  disabled={isGenerating}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {/* Modal: Resumo do Documento */}
       {showSummaryModal && (
         <Modal
           title={`Resumo: ${summaryFileName}`}
-          onClose={() => { setShowSummaryModal(false); setSummaryText(''); setSummaryFileName(''); }}
+          onClose={() => { setShowSummaryModal(false); setSummaryText(''); setSummaryFileName(''); setSummaryResumoId(null); }}
           confirmLabel="Fechar"
           confirmDisabled={false}
-          onConfirm={() => { setShowSummaryModal(false); setSummaryText(''); setSummaryFileName(''); }}
+          onConfirm={() => { setShowSummaryModal(false); setSummaryText(''); setSummaryFileName(''); setSummaryResumoId(null); }}
         >
+          {summaryResumoId && (
+            <button
+              className="dp-btn dp-btn--ghost dp-summary-download-btn"
+              onClick={() => downloadResumoPdf(summaryResumoId)}
+              disabled={isDownloadingPdf}
+            >
+              {isDownloadingPdf ? 'Gerando PDF...' : 'Baixar PDF'}
+            </button>
+          )}
           <div className="dp-modal__summary dp-modal__summary--markdown">
             <ReactMarkdown>{summaryText}</ReactMarkdown>
           </div>
@@ -1115,6 +1196,25 @@ export default function DocumentsPage() {
                         </span>
                       </div>
                       <div className="dp-content-list__actions">
+                        {contentModal.tipo === 'resumos' && (
+                          <>
+                            <button
+                              className="dp-file-item__icon-btn"
+                              title="Visualizar"
+                              onClick={() => viewResumo(item)}
+                            >
+                              {Icon.file}
+                            </button>
+                            <button
+                              className="dp-file-item__icon-btn"
+                              title="Baixar PDF"
+                              onClick={() => downloadResumoPdf(item.id)}
+                              disabled={isDownloadingPdf}
+                            >
+                              {Icon.download}
+                            </button>
+                          </>
+                        )}
                         <button
                           className="dp-file-item__icon-btn"
                           title="Renomear"

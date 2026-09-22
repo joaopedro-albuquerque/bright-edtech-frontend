@@ -157,6 +157,7 @@ export default function FlashcardsQuizzesPage() {
   const [selectedDocId,  setSelectedDocId]  = useState(null);
   const [isCreating,     setIsCreating]     = useState(false);
   const [modalError,     setModalError]     = useState('');
+  const [selectedDificuldade, setSelectedDificuldade] = useState('medio');
 
   // ── Modal de estudo ──
   const [studyItem,      setStudyItem]      = useState(null);
@@ -166,6 +167,8 @@ export default function FlashcardsQuizzesPage() {
   const [cardIndex,      setCardIndex]      = useState(0);
   const [flipped,        setFlipped]        = useState(false);
   const [answered,       setAnswered]       = useState(null);
+  const [quizAcertos,      setQuizAcertos]      = useState(0);
+  const [showQuizSummary,  setShowQuizSummary]  = useState(false);
 
   // ── Exclusão ──
   const [deleteTarget, setDeleteTarget] = useState(null); // { id, tipo, titulo }
@@ -234,6 +237,7 @@ export default function FlashcardsQuizzesPage() {
     setSelectedDocId(null);
     setModalError('');
     setModalDocs([]);
+    setSelectedDificuldade('medio');
     setIsLoadingDocs(true);
     try {
       const { token } = await getAuthHeaders();
@@ -283,7 +287,7 @@ export default function FlashcardsQuizzesPage() {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ quantidade: 10 }),
+        body: JSON.stringify({ quantidade: 10, dificuldade: selectedDificuldade }),
       });
 
       if (!res.ok) {
@@ -328,6 +332,8 @@ export default function FlashcardsQuizzesPage() {
     setCardIndex(0);
     setFlipped(false);
     setAnswered(null);
+    setQuizAcertos(0);
+    setShowQuizSummary(false);
     setIsLoadingStudy(true);
 
     try {
@@ -369,6 +375,56 @@ export default function FlashcardsQuizzesPage() {
   };
 
   const closeModal = () => { if (!isCreating) setShowModal(null); };
+
+  /* ── Avalia um cartão de flashcard (SM-2) e avança ── */
+  const avaliarCartao = async (qualidade) => {
+    try {
+      const { token } = await getAuthHeaders();
+      const id = dbUserId || await getDbUserId(token);
+      await fetch(`${API_BASE}/revisoes/cartoes/${currentCard.id}/avaliar`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'X-User-Id': id,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ qualidade }),
+      });
+    } catch {
+      // Falha silenciosa: não deve travar o fluxo de estudo do usuário.
+    }
+    if (cardIndex < studyCards.length - 1) {
+      nextCard();
+    } else {
+      closeStudy();
+    }
+  };
+
+  /* ── Responde uma questão de quiz: marca acerto/erro e auto-avalia (SM-2) ── */
+  const answerQuiz = async (index) => {
+    if (answered !== null) return;
+    setAnswered(index);
+
+    const alt = currentCard.conteudo?.alternativas?.[index];
+    const correto = alt === currentCard.conteudo?.resposta_correta;
+    if (correto) setQuizAcertos(a => a + 1);
+
+    try {
+      const { token } = await getAuthHeaders();
+      const id = dbUserId || await getDbUserId(token);
+      await fetch(`${API_BASE}/revisoes/questoes/${currentCard.id}/avaliar`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'X-User-Id': id,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ qualidade: correto ? 5 : 2 }),
+      });
+    } catch {
+      // Falha silenciosa: a nota de SM-2 não deve travar o quiz.
+    }
+  };
 
   /* ── Exclui flashcard ou quiz ── */
   const deleteItem = async () => {
@@ -609,6 +665,26 @@ export default function FlashcardsQuizzesPage() {
               {modalError && <p className="fq-modal__error">{modalError}</p>}
             </div>
 
+            <div className="fq-modal__difficulty">
+              <span className="fq-modal__difficulty-label">Dificuldade</span>
+              <div className="fq-modal__difficulty-options">
+                {[
+                  { value: 'facil',   label: 'Fácil' },
+                  { value: 'medio',   label: 'Médio' },
+                  { value: 'dificil', label: 'Difícil' },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    className={`fq-difficulty-btn${selectedDificuldade === opt.value ? ' fq-difficulty-btn--selected' : ''}`}
+                    onClick={() => setSelectedDificuldade(opt.value)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="fq-modal__footer">
               <button className="fq-btn fq-btn--ghost" onClick={closeModal} disabled={isCreating}>
                 Cancelar
@@ -631,7 +707,31 @@ export default function FlashcardsQuizzesPage() {
       {studyItem && (
         <div className="fq-overlay" onClick={closeStudy} role="dialog" aria-modal="true">
           <div className="fq-modal fq-modal--study" onClick={e => e.stopPropagation()}>
-
+          {showQuizSummary ? (
+            <>
+              <div className="fq-modal__header">
+                <div className="fq-modal__header-icon">{Icon.quiz}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h2 className="fq-modal__title" style={{ fontSize: '0.95rem' }}>{studyItem.titulo}</h2>
+                  <p className="fq-modal__subtitle">Resultado do quiz</p>
+                </div>
+                <button className="fq-modal__close" onClick={closeStudy} aria-label="Fechar">
+                  {Icon.close}
+                </button>
+              </div>
+              <div className="fq-study__body fq-quiz-summary">
+                <p className="fq-quiz-summary__score">
+                  Você acertou <strong>{quizAcertos}</strong> de <strong>{studyCards.length}</strong> questões
+                </p>
+              </div>
+              <div className="fq-study__nav">
+                <button className="fq-btn fq-btn--primary" onClick={closeStudy} style={{ marginLeft: 'auto' }}>
+                  Fechar
+                </button>
+              </div>
+            </>
+          ) : (
+          <>
             {/* Cabeçalho */}
             <div className="fq-modal__header">
               <div className="fq-modal__header-icon">
@@ -705,7 +805,8 @@ export default function FlashcardsQuizzesPage() {
                         <li key={i}>
                           <button
                             className={cls}
-                            onClick={() => setAnswered(i)}
+                            onClick={() => answerQuiz(i)}
+                            disabled={answered !== null}
                           >
                             <span className="fq-quiz__letter">{String.fromCharCode(65 + i)}</span>
                             {alt}
@@ -733,15 +834,34 @@ export default function FlashcardsQuizzesPage() {
                     {Icon.rotate} Virar
                   </button>
                 )}
-                <button
-                  className="fq-btn fq-btn--primary"
-                  onClick={cardIndex < studyCards.length - 1 ? nextCard : closeStudy}
-                  disabled={!isFlashcardStudy && answered === null}
-                >
-                  {cardIndex < studyCards.length - 1 ? <>Próximo {Icon.arrowRight}</> : 'Concluir'}
-                </button>
+                {isFlashcardStudy && flipped ? (
+                  <div className="fq-rate-bar">
+                    <button className="fq-rate-btn fq-rate-btn--again" onClick={() => avaliarCartao(1)}>Errei</button>
+                    <button className="fq-rate-btn fq-rate-btn--hard"  onClick={() => avaliarCartao(3)}>Difícil</button>
+                    <button className="fq-rate-btn fq-rate-btn--good"  onClick={() => avaliarCartao(4)}>Bom</button>
+                    <button className="fq-rate-btn fq-rate-btn--easy"  onClick={() => avaliarCartao(5)}>Fácil</button>
+                  </div>
+                ) : (
+                  <button
+                    className="fq-btn fq-btn--primary"
+                    onClick={() => {
+                      if (cardIndex < studyCards.length - 1) {
+                        nextCard();
+                      } else if (isFlashcardStudy) {
+                        closeStudy();
+                      } else {
+                        setShowQuizSummary(true);
+                      }
+                    }}
+                    disabled={!isFlashcardStudy && answered === null}
+                  >
+                    {cardIndex < studyCards.length - 1 ? <>Próximo {Icon.arrowRight}</> : 'Concluir'}
+                  </button>
+                )}
               </div>
             )}
+          </>
+          )}
           </div>
         </div>
       )}

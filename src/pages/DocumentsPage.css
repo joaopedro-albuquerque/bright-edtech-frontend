@@ -932,3 +932,36 @@
   gap: 0.4rem;
   flex-shrink: 0;
 }
+
+/* ── Seletor de formato (modal: Novo Resumo) ── */
+.dp-format-options {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.dp-format-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(10, 21, 53, 0.12);
+  background: none;
+  color: var(--lp-text-dark, #0a1535);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.dp-format-btn:hover:not(:disabled) { border-color: rgba(74, 144, 217, 0.4); }
+
+.dp-format-btn--selected {
+  border-color: #4a90d9;
+  background: rgba(74, 144, 217, 0.1);
+  color: #2c5282;
+  font-weight: 600;
+}
+
+/* ── Botão de download de PDF no modal de resumo ── */
+.dp-summary-download-btn {
+  margin-bottom: 0.75rem;
+}
