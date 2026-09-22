@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import './FlashcardsQuizzesPage.css';
 import { API_BASE } from '../config';
+import StudyModal from '../components/StudyModal';
 
 /* ─────────────────────────────────────────────
    ÍCONES
@@ -160,15 +161,7 @@ export default function FlashcardsQuizzesPage() {
   const [selectedDificuldade, setSelectedDificuldade] = useState('medio');
 
   // ── Modal de estudo ──
-  const [studyItem,      setStudyItem]      = useState(null);
-  const [studyCards,     setStudyCards]     = useState([]);
-  const [isLoadingStudy, setIsLoadingStudy] = useState(false);
-  const [studyError,     setStudyError]     = useState('');
-  const [cardIndex,      setCardIndex]      = useState(0);
-  const [flipped,        setFlipped]        = useState(false);
-  const [answered,       setAnswered]       = useState(null);
-  const [quizAcertos,      setQuizAcertos]      = useState(0);
-  const [showQuizSummary,  setShowQuizSummary]  = useState(false);
+  const [studyItem, setStudyItem] = useState(null); // { id, titulo, tipo }
 
   // ── Exclusão ──
   const [deleteTarget, setDeleteTarget] = useState(null); // { id, tipo, titulo }
@@ -324,107 +317,11 @@ export default function FlashcardsQuizzesPage() {
     }
   };
 
-  /* ── Abre o modal de estudo e busca conteúdo da API ── */
-  const openStudy = async (item, tipo) => {
-    setStudyItem({ ...item, tipo });
-    setStudyCards([]);
-    setStudyError('');
-    setCardIndex(0);
-    setFlipped(false);
-    setAnswered(null);
-    setQuizAcertos(0);
-    setShowQuizSummary(false);
-    setIsLoadingStudy(true);
-
-    try {
-      const { token } = await getAuthHeaders();
-      const id = dbUserId || await getDbUserId(token);
-      const headers = {
-        Authorization: `Bearer ${token}`,
-        'X-User-Id': id,
-      };
-
-      const endpoint = tipo === 'flashcard'
-        ? `${API_BASE}/flashcards/${item.id}/conteudo`
-        : `${API_BASE}/quizzes/${item.id}/conteudo`;
-
-      const res = await fetch(endpoint, { headers });
-      if (!res.ok) throw new Error(`Erro ${res.status} ao carregar conteúdo.`);
-      const data = await res.json();
-
-      setStudyCards(tipo === 'flashcard' ? (data.cartoes || []) : (data.questoes || []));
-    } catch (err) {
-      setStudyError(err.message);
-    } finally {
-      setIsLoadingStudy(false);
-    }
-  };
-
+  /* ── Abre/fecha o modal de estudo (StudyModal cuida do proprio carregamento) ── */
+  const openStudy = (item, tipo) => setStudyItem({ ...item, tipo });
   const closeStudy = () => setStudyItem(null);
 
-  const nextCard = () => {
-    setCardIndex(i => i + 1);
-    setFlipped(false);
-    setAnswered(null);
-  };
-
-  const prevCard = () => {
-    setCardIndex(i => i - 1);
-    setFlipped(false);
-    setAnswered(null);
-  };
-
   const closeModal = () => { if (!isCreating) setShowModal(null); };
-
-  /* ── Avalia um cartão de flashcard (SM-2) e avança ── */
-  const avaliarCartao = async (qualidade) => {
-    try {
-      const { token } = await getAuthHeaders();
-      const id = dbUserId || await getDbUserId(token);
-      await fetch(`${API_BASE}/revisoes/cartoes/${currentCard.id}/avaliar`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'X-User-Id': id,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ qualidade }),
-      });
-    } catch {
-      // Falha silenciosa: não deve travar o fluxo de estudo do usuário.
-    }
-    if (cardIndex < studyCards.length - 1) {
-      nextCard();
-    } else {
-      closeStudy();
-    }
-  };
-
-  /* ── Responde uma questão de quiz: marca acerto/erro e auto-avalia (SM-2) ── */
-  const answerQuiz = async (index) => {
-    if (answered !== null) return;
-    setAnswered(index);
-
-    const alt = currentCard.conteudo?.alternativas?.[index];
-    const correto = alt === currentCard.conteudo?.resposta_correta;
-    if (correto) setQuizAcertos(a => a + 1);
-
-    try {
-      const { token } = await getAuthHeaders();
-      const id = dbUserId || await getDbUserId(token);
-      await fetch(`${API_BASE}/revisoes/questoes/${currentCard.id}/avaliar`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'X-User-Id': id,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ qualidade: correto ? 5 : 2 }),
-      });
-    } catch {
-      // Falha silenciosa: a nota de SM-2 não deve travar o quiz.
-    }
-  };
 
   /* ── Exclui flashcard ou quiz ── */
   const deleteItem = async () => {
@@ -459,8 +356,6 @@ export default function FlashcardsQuizzesPage() {
   /* ── Dados da tab ativa ── */
   const items    = activeTab === 'flashcards' ? flashcards : quizzes;
   const dueCount = items.filter(i => dueIds.has(i.id)).length;
-  const currentCard = studyCards[cardIndex];
-  const isFlashcardStudy = studyItem?.tipo === 'flashcard';
 
   /* ══════════════════════════════════════════
      RENDER
@@ -705,166 +600,9 @@ export default function FlashcardsQuizzesPage() {
           MODAL — Estudo
       ══════════════════════════════════════════ */}
       {studyItem && (
-        <div className="fq-overlay" onClick={closeStudy} role="dialog" aria-modal="true">
-          <div className="fq-modal fq-modal--study" onClick={e => e.stopPropagation()}>
-          {showQuizSummary ? (
-            <>
-              <div className="fq-modal__header">
-                <div className="fq-modal__header-icon">{Icon.quiz}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <h2 className="fq-modal__title" style={{ fontSize: '0.95rem' }}>{studyItem.titulo}</h2>
-                  <p className="fq-modal__subtitle">Resultado do quiz</p>
-                </div>
-                <button className="fq-modal__close" onClick={closeStudy} aria-label="Fechar">
-                  {Icon.close}
-                </button>
-              </div>
-              <div className="fq-study__body fq-quiz-summary">
-                <p className="fq-quiz-summary__score">
-                  Você acertou <strong>{quizAcertos}</strong> de <strong>{studyCards.length}</strong> questões
-                </p>
-              </div>
-              <div className="fq-study__nav">
-                <button className="fq-btn fq-btn--primary" onClick={closeStudy} style={{ marginLeft: 'auto' }}>
-                  Fechar
-                </button>
-              </div>
-            </>
-          ) : (
-          <>
-            {/* Cabeçalho */}
-            <div className="fq-modal__header">
-              <div className="fq-modal__header-icon">
-                {isFlashcardStudy ? Icon.flashcard : Icon.quiz}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <h2 className="fq-modal__title" style={{ fontSize: '0.95rem' }}>{studyItem.titulo}</h2>
-                <p className="fq-modal__subtitle">
-                  {isLoadingStudy
-                    ? 'Carregando...'
-                    : studyError
-                    ? 'Erro ao carregar'
-                    : studyCards.length === 0
-                    ? 'Nenhum card disponível'
-                    : `${cardIndex + 1} de ${studyCards.length}`}
-                </p>
-              </div>
-              <button className="fq-modal__close" onClick={closeStudy} aria-label="Fechar">
-                {Icon.close}
-              </button>
-            </div>
-
-            {/* Conteúdo do estudo */}
-            <div className="fq-study__body">
-              {isLoadingStudy ? (
-                <div className="fq-modal__loading">
-                  {Icon.spinner}
-                  Carregando conteúdo...
-                </div>
-              ) : studyError ? (
-                <div className="fq-modal__empty" style={{ padding: '2rem 0', color: '#c53030' }}>
-                  {studyError}
-                </div>
-              ) : studyCards.length === 0 ? (
-                <div className="fq-modal__empty" style={{ padding: '3rem 0' }}>
-                  Nenhum card encontrado neste conjunto.
-                </div>
-              ) : isFlashcardStudy ? (
-                /* ── Flip card ── */
-                <div
-                  className={`fq-flashcard${flipped ? ' fq-flashcard--flipped' : ''}`}
-                  onClick={() => setFlipped(f => !f)}
-                  title="Clique para virar"
-                >
-                  <div className="fq-flashcard__inner">
-                    <div className="fq-flashcard__front">
-                      <span className="fq-flashcard__label">Pergunta</span>
-                      <p className="fq-flashcard__text">{currentCard.conteudo?.pergunta}</p>
-                    </div>
-                    <div className="fq-flashcard__back">
-                      <span className="fq-flashcard__label">Resposta</span>
-                      <p className="fq-flashcard__text">{currentCard.conteudo?.resposta}</p>
-                    </div>
-                  </div>
-                  <p className="fq-flashcard__hint">{flipped ? 'Clique para ver a pergunta' : 'Clique para ver a resposta'}</p>
-                </div>
-              ) : (
-                /* ── Questão quiz ── */
-                <div className="fq-quiz">
-                  <p className="fq-quiz__question">{currentCard.conteudo?.pergunta}</p>
-                  <ul className="fq-quiz__options">
-                    {(currentCard.conteudo?.alternativas || []).map((alt, i) => {
-                      const isCorrect = alt === currentCard.conteudo?.resposta_correta;
-                      const isChosen  = i === answered;
-                      let cls = 'fq-quiz__option';
-                      if (answered !== null) {
-                        if (isCorrect)     cls += ' fq-quiz__option--correct';
-                        else if (isChosen) cls += ' fq-quiz__option--wrong';
-                      }
-                      return (
-                        <li key={i}>
-                          <button
-                            className={cls}
-                            onClick={() => answerQuiz(i)}
-                            disabled={answered !== null}
-                          >
-                            <span className="fq-quiz__letter">{String.fromCharCode(65 + i)}</span>
-                            {alt}
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            {/* Navegação */}
-            {!isLoadingStudy && !studyError && studyCards.length > 0 && (
-              <div className="fq-study__nav">
-                <button
-                  className="fq-btn fq-btn--ghost"
-                  onClick={prevCard}
-                  disabled={cardIndex === 0}
-                >
-                  {Icon.arrowLeft} Anterior
-                </button>
-                {isFlashcardStudy && (
-                  <button className="fq-btn fq-btn--ghost" onClick={() => setFlipped(f => !f)}>
-                    {Icon.rotate} Virar
-                  </button>
-                )}
-                {isFlashcardStudy && flipped ? (
-                  <div className="fq-rate-bar">
-                    <button className="fq-rate-btn fq-rate-btn--again" onClick={() => avaliarCartao(1)}>Errei</button>
-                    <button className="fq-rate-btn fq-rate-btn--hard"  onClick={() => avaliarCartao(3)}>Difícil</button>
-                    <button className="fq-rate-btn fq-rate-btn--good"  onClick={() => avaliarCartao(4)}>Bom</button>
-                    <button className="fq-rate-btn fq-rate-btn--easy"  onClick={() => avaliarCartao(5)}>Fácil</button>
-                  </div>
-                ) : (
-                  <button
-                    className="fq-btn fq-btn--primary"
-                    onClick={() => {
-                      if (cardIndex < studyCards.length - 1) {
-                        nextCard();
-                      } else if (isFlashcardStudy) {
-                        closeStudy();
-                      } else {
-                        setShowQuizSummary(true);
-                      }
-                    }}
-                    disabled={!isFlashcardStudy && answered === null}
-                  >
-                    {cardIndex < studyCards.length - 1 ? <>Próximo {Icon.arrowRight}</> : 'Concluir'}
-                  </button>
-                )}
-              </div>
-            )}
-          </>
-          )}
-          </div>
-        </div>
+        <StudyModal item={studyItem} tipo={studyItem.tipo} onClose={closeStudy} />
       )}
+
 
       {/* ══════════════════════════════════════════
           MODAL — Confirmar exclusão

@@ -825,12 +825,49 @@
   .dp-header__actions .dp-btn--primary { display: none; }
 }
 
+.dp-modal--summary {
+  max-width: 720px;
+  width: 92vw;
+}
+
 .dp-modal__summary--markdown {
   max-height: 60vh;
   overflow-y: auto;
-  line-height: 1.6;
+  line-height: 1.65;
   font-size: 0.92rem;
   color: #1f2937;
+  padding-right: 0.25rem;
+}
+
+.dp-modal__summary--markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1em;
+  font-size: 0.85rem;
+}
+
+.dp-modal__summary--markdown th,
+.dp-modal__summary--markdown td {
+  border: 1px solid rgba(10, 21, 53, 0.12);
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.dp-modal__summary--markdown th {
+  background: #16324f;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.dp-modal__summary--markdown tr:nth-child(even) td {
+  background: rgba(10, 21, 53, 0.02);
+}
+
+.dp-modal__summary--markdown hr {
+  border: none;
+  border-top: 1px solid rgba(10, 21, 53, 0.1);
+  margin: 1em 0;
 }
 
 .dp-modal__summary--markdown h1,
@@ -964,4 +1001,10 @@
 /* ── Botão de download de PDF no modal de resumo ── */
 .dp-summary-download-btn {
   margin-bottom: 0.75rem;
+}
+
+.dp-content-list__generate-btn {
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 0.9rem;
 }

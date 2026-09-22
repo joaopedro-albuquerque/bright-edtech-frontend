@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import './DocumentsPage.css';
 import { API_BASE } from '../config';
+import StudyModal from '../components/StudyModal';
 
 /* ─────────────────────────────────────────────
    ÍCONES SVG INLINE
@@ -172,6 +174,8 @@ export default function DocumentsPage() {
   const [renameContentTitle,  setRenameContentTitle]  = useState('');
   const [deleteContentTarget, setDeleteContentTarget] = useState(null); // { tipo, id, titulo }
   const [isSavingContent,     setIsSavingContent]     = useState(false);
+  const [isQuickGenerating,   setIsQuickGenerating]   = useState(false);
+  const [studyItem,           setStudyItem]           = useState(null); // { id, titulo, tipo }
 
   const CONTENT_LABELS = {
     resumos:    { singular: 'Resumo',    plural: 'Resumos' },
@@ -496,6 +500,7 @@ export default function DocumentsPage() {
       setSummaryText(data.conteudo || 'Nenhum conteúdo de resumo.');
       setSummaryFileName(item.titulo);
       setSummaryResumoId(item.id);
+      closeContentModal();
       setShowSummaryModal(true);
     } catch (err) {
       setContentModalError(err.message);
@@ -548,6 +553,37 @@ export default function DocumentsPage() {
     setContentModal(null);
     setContentModalItems([]);
     setContentModalError('');
+  };
+
+  /* ── Geração rápida de flashcard/quiz direto do Document Hub ── */
+  const quickGenerateContent = async () => {
+    if (!contentModal) return;
+    const { file, tipo } = contentModal;
+    setIsQuickGenerating(true);
+    setContentModalError('');
+    try {
+      const { token } = await getAuthHeaders();
+      const bankUserId = dbUserId || await getBankUserId(token);
+      const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': bankUserId, 'Content-Type': 'application/json' };
+
+      const res = await fetch(`${API_BASE}/documentos/${file.id}/${tipo}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ quantidade: 10, dificuldade: 'medio' }),
+      });
+      if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível gerar.`);
+      const created = await res.json();
+
+      setContentModalItems(prev => [created, ...prev]);
+      setFileCounts(prev => ({
+        ...prev,
+        [file.id]: { ...(prev[file.id] || { resumos: 0, flashcards: 0, quizzes: 0 }), [tipo]: (prev[file.id]?.[tipo] ?? 0) + 1 },
+      }));
+    } catch (err) {
+      setContentModalError(err.message);
+    } finally {
+      setIsQuickGenerating(false);
+    }
   };
 
   const saveRenameContent = async () => {
@@ -1097,6 +1133,7 @@ export default function DocumentsPage() {
       {showSummaryModal && (
         <Modal
           title={`Resumo: ${summaryFileName}`}
+          className="dp-modal--summary"
           onClose={() => { setShowSummaryModal(false); setSummaryText(''); setSummaryFileName(''); setSummaryResumoId(null); }}
           confirmLabel="Fechar"
           confirmDisabled={false}
@@ -1112,7 +1149,7 @@ export default function DocumentsPage() {
             </button>
           )}
           <div className="dp-modal__summary dp-modal__summary--markdown">
-            <ReactMarkdown>{summaryText}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{summaryText}</ReactMarkdown>
           </div>
         </Modal>
       )}
@@ -1175,6 +1212,23 @@ export default function DocumentsPage() {
               <button className="dp-modal__close" onClick={closeContentModal} aria-label="Fechar">✕</button>
             </div>
             <div className="dp-modal__body">
+              <button
+                type="button"
+                className="dp-btn dp-btn--ghost dp-content-list__generate-btn"
+                disabled={isQuickGenerating}
+                onClick={() => {
+                  if (contentModal.tipo === 'resumos') {
+                    const file = contentModal.file;
+                    closeContentModal();
+                    setNewSummaryTarget(file);
+                    setNewSummaryFormat('cornell');
+                  } else {
+                    quickGenerateContent();
+                  }
+                }}
+              >
+                {isQuickGenerating ? 'Gerando com IA...' : `+ Gerar novo ${CONTENT_LABELS[contentModal.tipo].singular.toLowerCase()}`}
+              </button>
               {contentModalError && (
                 <p className="dp-modal__text" style={{ color: '#c53030' }}>{contentModalError}</p>
               )}
@@ -1196,6 +1250,19 @@ export default function DocumentsPage() {
                         </span>
                       </div>
                       <div className="dp-content-list__actions">
+                        {contentModal.tipo !== 'resumos' && (
+                          <button
+                            className="dp-file-item__icon-btn"
+                            title="Visualizar"
+                            onClick={() => {
+                              const tipo = contentModal.tipo === 'flashcards' ? 'flashcard' : 'quiz';
+                              setStudyItem({ id: item.id, titulo: item.titulo, tipo });
+                              closeContentModal();
+                            }}
+                          >
+                            {Icon.file}
+                          </button>
+                        )}
                         {contentModal.tipo === 'resumos' && (
                           <>
                             <button
@@ -1281,6 +1348,11 @@ export default function DocumentsPage() {
         </Modal>
       )}
 
+      {/* Modal: Estudo de flashcard/quiz (a partir do Document Hub) */}
+      {studyItem && (
+        <StudyModal item={studyItem} tipo={studyItem.tipo} onClose={() => setStudyItem(null)} />
+      )}
+
       {/* ── FAB: botão flutuante de nova pasta (mobile) ── */}
       <button
         className="dp-fab"
@@ -1298,7 +1370,7 @@ export default function DocumentsPage() {
    COMPONENTE AUXILIAR: Modal genérico reutilizável
 ───────────────────────────────────────────── */
 function Modal({ title, onClose, onConfirm, confirmLabel, confirmVariant = 'primary',
-  isLoading, confirmDisabled = false, children }) {
+  isLoading, confirmDisabled = false, className = '', children }) {
   // Fecha com Escape
   useEffect(() => {
     const handler = (e) => { if (e.key === 'Escape') onClose(); };
@@ -1309,7 +1381,7 @@ function Modal({ title, onClose, onConfirm, confirmLabel, confirmVariant = 'prim
   return (
     <div className="dp-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="dp-modal">
+      <div className={`dp-modal${className ? ` ${className}` : ''}`}>
         <div className="dp-modal__header">
           <h2 className="dp-modal__title" id="modal-title">{title}</h2>
           <button className="dp-modal__close" onClick={onClose} aria-label="Fechar">✕</button>

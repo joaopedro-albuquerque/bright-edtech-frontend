@@ -853,9 +853,11 @@
 /* ── Resultado final do quiz ── */
 .fq-quiz-summary {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 1.5rem;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 1.5rem;
+  max-height: 55vh;
+  overflow-y: auto;
   text-align: center;
 }
 
@@ -869,5 +871,57 @@
 .fq-quiz-summary__score strong {
   color: #2c5282;
   font-size: 1.3rem;
+}
+
+.fq-quiz-summary__list {
+  list-style: none;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-align: left;
+}
+
+.fq-quiz-summary__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid rgba(10,21,53,0.08);
+}
+
+.fq-quiz-summary__item--correct { background: rgba(56,161,105,0.06); border-color: rgba(56,161,105,0.2); }
+.fq-quiz-summary__item--wrong   { background: rgba(229,62,62,0.06); border-color: rgba(229,62,62,0.2); }
+
+.fq-quiz-summary__badge {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.fq-quiz-summary__item--correct .fq-quiz-summary__badge { background: rgba(56,161,105,0.18); color: #276749; }
+.fq-quiz-summary__item--wrong   .fq-quiz-summary__badge { background: rgba(229,62,62,0.15); color: #c53030; }
+
+.fq-quiz-summary__question {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--lp-text-dark, #0a1535);
+  margin: 0;
+}
+
+.fq-quiz-summary__answer {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8rem;
+  color: var(--lp-text-muted, #6b7280);
+  margin: 0.25rem 0 0;
 }
 
