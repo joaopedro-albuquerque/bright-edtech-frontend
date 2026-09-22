@@ -19,13 +19,13 @@ export default function Hero() {
           Estudo com propósito
         </div>
         <h1 className="hero__title">
-          Estude com eficiência e<br />
-          <span className="hero__title-highlight">transforme tempo perdido</span><br />
-          em conquistas com a Bright.
+          O jeito<br />
+          <span className="hero__title-highlight">inteligente e eficiente</span><br />
+          de estudar é com a Bright.
         </h1>
         <p className="hero__subtitle">
-          Carregue seus materiais, organize-os automaticamente e gere flashcards e resumos
-          inteligentes para revisar com eficiência.
+          Transforme tempo perdido em conquistas. Carregue seus materiais, organize-os
+          automaticamente e gere flashcards e resumos inteligentes para revisar com eficiência.
         </p>
         <button className="hero__cta" onClick={handleCTA}>
           Começar o primeiro estudo
