@@ -998,6 +998,13 @@
   font-weight: 600;
 }
 
+.dp-format-description {
+  margin: 0.6rem 0 0;
+  font-size: 0.8rem;
+  color: var(--lp-text-muted, #6b7280);
+  line-height: 1.5;
+}
+
 /* ── Botão de download de PDF no modal de resumo ── */
 .dp-summary-download-btn {
   margin-bottom: 0.75rem;

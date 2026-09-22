@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { Link } from 'react-router-dom';
 import QuickUploadModal from '../components/QuickUploadModal';
+import StudyModal from '../components/StudyModal';
 import './OverviewPage.css';
 import { API_BASE } from '../config';
 
@@ -110,6 +111,26 @@ export default function OverviewPage() {
 
   // ── Upload rápido ──
   const [showQuickUpload, setShowQuickUpload] = useState(false);
+
+  // ── Abrir resumo/flashcard/quiz a partir da atividade recente ──
+  const [studyItem,          setStudyItem]          = useState(null); // { id, titulo, tipo }
+  const [isOpeningResumoId,  setIsOpeningResumoId]   = useState(null);
+
+  const handleViewResumo = async (item) => {
+    setIsOpeningResumoId(item.id);
+    try {
+      const { token } = await getAuthHeaders();
+      const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': dbUserId };
+      const res = await fetch(`${API_BASE}/resumos/${item.id}/download`, { headers });
+      if (!res.ok) throw new Error(`Erro ${res.status} ao abrir o PDF.`);
+      const data = await res.json();
+      if (data.url) window.open(data.url, '_blank');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsOpeningResumoId(null);
+    }
+  };
 
   /* ── Carrega o dashboard da API ── */
   const loadDashboard = useCallback(async () => {
@@ -265,7 +286,7 @@ export default function OverviewPage() {
           </button>
         </div>
         <p className="ov-header__sub">
-          Você tem materiais prontos para revisar. Vamos continuar de onde parou?
+          Aqui você acompanha os resumos, flashcards e quizzes gerados dos seus materiais. Já estudou hoje?
         </p>
       </header>
 
@@ -356,6 +377,7 @@ export default function OverviewPage() {
                 title={item.titulo ?? item.pergunta ?? 'Flashcard'}
                 meta={formatDate(item.criado_em)}
                 icon={Icon.clock}
+                onClick={() => setStudyItem({ id: item.id, titulo: item.titulo ?? 'Flashcard', tipo: 'flashcard' })}
               />
             ))}
           </ActivityPanel>
@@ -374,8 +396,10 @@ export default function OverviewPage() {
               <ActivityItem
                 key={item.id}
                 title={item.titulo ?? item.nome ?? 'Resumo'}
-                meta={formatDate(item.criado_em)}
+                meta={isOpeningResumoId === item.id ? 'Abrindo...' : formatDate(item.criado_em)}
                 icon={Icon.clock}
+                onClick={() => handleViewResumo(item)}
+                disabled={isOpeningResumoId === item.id}
               />
             ))}
           </ActivityPanel>
@@ -396,12 +420,17 @@ export default function OverviewPage() {
                 title={item.titulo ?? item.nome ?? 'Quiz'}
                 meta={formatDate(item.criado_em)}
                 icon={Icon.clock}
+                onClick={() => setStudyItem({ id: item.id, titulo: item.titulo ?? 'Quiz', tipo: 'quiz' })}
               />
             ))}
           </ActivityPanel>
 
         </div>
       </section>
+
+      {studyItem && (
+        <StudyModal item={studyItem} tipo={studyItem.tipo} onClose={() => setStudyItem(null)} />
+      )}
 
     </div>
   );
@@ -446,14 +475,21 @@ function ActivityPanel({ title, icon, color, ctaLabel, ctaTo,
 /* ─────────────────────────────────────────────
    SUB-COMPONENTE: item de atividade
 ───────────────────────────────────────────── */
-function ActivityItem({ title, meta, icon }) {
+function ActivityItem({ title, meta, icon, onClick, disabled = false }) {
   return (
     <li className="ov-activity-item">
-      <span className="ov-activity-item__title">{title}</span>
-      <span className="ov-activity-item__meta">
-        {icon}
-        {meta}
-      </span>
+      <button
+        type="button"
+        className="ov-activity-item__btn"
+        onClick={onClick}
+        disabled={disabled}
+      >
+        <span className="ov-activity-item__title">{title}</span>
+        <span className="ov-activity-item__meta">
+          {icon}
+          {meta}
+        </span>
+      </button>
     </li>
   );
 }
