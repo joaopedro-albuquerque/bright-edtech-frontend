@@ -62,6 +62,13 @@ async function getDbUserId(token) {
   return profile.id;
 }
 
+/** Compara duas alternativas de quiz tolerando espaços/maiúsculas — protege
+ * contra pequenas divergências de formatação vindas da IA. */
+function mesmaAlternativa(a, b) {
+  if (a == null || b == null) return false;
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
 /**
  * Modal de estudo reutilizável para flashcards (flip + avaliação SM-2) e
  * quizzes (responder + resultado final com detalhe por questão).
@@ -141,7 +148,7 @@ export default function StudyModal({ item, tipo, onClose }) {
     setAnswersMap(prev => ({ ...prev, [cardIndex]: index }));
 
     const alt = currentCard.conteudo?.alternativas?.[index];
-    const correto = alt === currentCard.conteudo?.resposta_correta;
+    const correto = mesmaAlternativa(alt, currentCard.conteudo?.resposta_correta);
     try {
       const { token } = await getAuthHeaders();
       const id = await getDbUserId(token);
@@ -158,7 +165,7 @@ export default function StudyModal({ item, tipo, onClose }) {
   const quizAcertos = cards.reduce((total, card, i) => {
     const escolhida = answersMap[i];
     if (escolhida === undefined) return total;
-    const correta = card.conteudo?.alternativas?.[escolhida] === card.conteudo?.resposta_correta;
+    const correta = mesmaAlternativa(card.conteudo?.alternativas?.[escolhida], card.conteudo?.resposta_correta);
     return correta ? total + 1 : total;
   }, 0);
 
@@ -184,7 +191,7 @@ export default function StudyModal({ item, tipo, onClose }) {
                   const escolhidaIdx = answersMap[i];
                   const escolhida = escolhidaIdx !== undefined ? card.conteudo?.alternativas?.[escolhidaIdx] : null;
                   const correta = card.conteudo?.resposta_correta;
-                  const acertou = escolhida === correta;
+                  const acertou = mesmaAlternativa(escolhida, correta);
                   return (
                     <li key={card.id} className={`fq-quiz-summary__item${acertou ? ' fq-quiz-summary__item--correct' : ' fq-quiz-summary__item--wrong'}`}>
                       <span className="fq-quiz-summary__badge">{acertou ? '✓' : '✗'}</span>
@@ -250,7 +257,7 @@ export default function StudyModal({ item, tipo, onClose }) {
                   <p className="fq-quiz__question">{currentCard.conteudo?.pergunta}</p>
                   <ul className="fq-quiz__options">
                     {(currentCard.conteudo?.alternativas || []).map((alt, i) => {
-                      const isCorrect = alt === currentCard.conteudo?.resposta_correta;
+                      const isCorrect = mesmaAlternativa(alt, currentCard.conteudo?.resposta_correta);
                       let cls = 'fq-quiz__option';
                       if (isVerified) {
                         if (isCorrect)             cls += ' fq-quiz__option--correct';
@@ -276,6 +283,17 @@ export default function StudyModal({ item, tipo, onClose }) {
                     >
                       Verificar resposta
                     </button>
+                  )}
+                  {isVerified && (
+                    mesmaAlternativa(currentCard.conteudo?.alternativas?.[verifiedIndex], currentCard.conteudo?.resposta_correta) ? (
+                      <p className="fq-quiz__feedback fq-quiz__feedback--correct">
+                        🎉 Parabéns, você acertou!
+                      </p>
+                    ) : (
+                      <p className="fq-quiz__feedback fq-quiz__feedback--wrong">
+                        Você errou. A alternativa correta era: <strong>{currentCard.conteudo?.resposta_correta}</strong>
+                      </p>
+                    )
                   )}
                 </div>
               )}
