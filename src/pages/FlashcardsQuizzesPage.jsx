@@ -675,7 +675,6 @@ export default function FlashcardsQuizzesPage() {
                         <li key={i}>
                           <button
                             className={cls}
-                            disabled={answered !== null}
                             onClick={() => setAnswered(i)}
                           >
                             <span className="fq-quiz__letter">{String.fromCharCode(65 + i)}</span>
