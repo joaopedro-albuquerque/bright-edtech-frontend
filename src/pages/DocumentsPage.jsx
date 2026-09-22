@@ -147,6 +147,22 @@ export default function DocumentsPage() {
   const [renameFileName,   setRenameFileName]   = useState('');
   const [deleteFileTarget, setDeleteFileTarget] = useState(null); // { id, nome }
 
+  // ── Modal de listagem por tipo (resumos/flashcards/quizzes de um documento) ──
+  const [contentModal,        setContentModal]        = useState(null); // { file, tipo }
+  const [contentModalItems,   setContentModalItems]   = useState([]);
+  const [isLoadingContent,    setIsLoadingContent]    = useState(false);
+  const [contentModalError,   setContentModalError]   = useState('');
+  const [renameContentTarget, setRenameContentTarget] = useState(null); // { tipo, id, titulo }
+  const [renameContentTitle,  setRenameContentTitle]  = useState('');
+  const [deleteContentTarget, setDeleteContentTarget] = useState(null); // { tipo, id, titulo }
+  const [isSavingContent,     setIsSavingContent]     = useState(false);
+
+  const CONTENT_LABELS = {
+    resumos:    { singular: 'Resumo',    plural: 'Resumos' },
+    flashcards: { singular: 'Flashcard', plural: 'Flashcards' },
+    quizzes:    { singular: 'Quiz',      plural: 'Quizzes' },
+  };
+
   /* ── Fecha o menu ao clicar fora ── */
   useEffect(() => {
     function handleClick(e) {
@@ -461,6 +477,91 @@ export default function DocumentsPage() {
   };
 
   /* ─────────────────────────────────────────
+     LISTAGEM POR TIPO (resumos/flashcards/quizzes de um documento)
+  ───────────────────────────────────────── */
+  const openContentModal = async (file, tipo) => {
+    setContentModal({ file, tipo });
+    setContentModalItems([]);
+    setContentModalError('');
+    setIsLoadingContent(true);
+    try {
+      const { token } = await getAuthHeaders();
+      const bankUserId = dbUserId || await getBankUserId(token);
+      const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': bankUserId };
+
+      const res = await fetch(`${API_BASE}/documentos/${file.id}/${tipo}`, { headers });
+      if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível carregar a lista.`);
+      const data = await res.json();
+      setContentModalItems(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setContentModalError(err.message);
+    } finally {
+      setIsLoadingContent(false);
+    }
+  };
+
+  const closeContentModal = () => {
+    setContentModal(null);
+    setContentModalItems([]);
+    setContentModalError('');
+  };
+
+  const saveRenameContent = async () => {
+    if (!renameContentTarget || !renameContentTitle.trim()) return;
+    setIsSavingContent(true);
+    try {
+      const { token } = await getAuthHeaders();
+      const bankUserId = dbUserId || await getBankUserId(token);
+      const { tipo, id } = renameContentTarget;
+      const res = await fetch(`${API_BASE}/${tipo}/${id}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'X-User-Id': bankUserId,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ titulo: renameContentTitle.trim() }),
+      });
+      if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível renomear.`);
+      const updated = await res.json();
+      setContentModalItems(prev => prev.map(it => it.id === id ? { ...it, titulo: updated.titulo } : it));
+      setRenameContentTarget(null);
+      setRenameContentTitle('');
+    } catch (err) {
+      setContentModalError(err.message);
+    } finally {
+      setIsSavingContent(false);
+    }
+  };
+
+  const confirmDeleteContent = async () => {
+    if (!deleteContentTarget) return;
+    setIsSavingContent(true);
+    try {
+      const { token } = await getAuthHeaders();
+      const bankUserId = dbUserId || await getBankUserId(token);
+      const { tipo, id } = deleteContentTarget;
+      const res = await fetch(`${API_BASE}/${tipo}/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}`, 'X-User-Id': bankUserId },
+      });
+      if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível excluir.`);
+      setContentModalItems(prev => prev.filter(it => it.id !== id));
+      if (contentModal) {
+        setFileCounts(prev => {
+          const current = prev[contentModal.file.id] || { resumos: 0, flashcards: 0, quizzes: 0 };
+          return { ...prev, [contentModal.file.id]: { ...current, [tipo]: Math.max(0, (current[tipo] ?? 1) - 1) } };
+        });
+      }
+      setDeleteContentTarget(null);
+    } catch (err) {
+      setContentModalError(err.message);
+    } finally {
+      setIsSavingContent(false);
+    }
+  };
+
+  /* ─────────────────────────────────────────
      ABRIR DOCUMENTO (Visualização Segura)
   ───────────────────────────────────────── */
   const handleOpenDocument = async (file) => {
@@ -749,16 +850,28 @@ export default function DocumentsPage() {
                       {isThisGenerating ? Icon.spinner : Icon.ai}
                     </button>
 
-                    {/* Badges de contagem */}
-                    <span className="dp-file-item__count dp-file-item__count--resumos">
+                    {/* Badges de contagem (clicáveis) */}
+                    <button
+                      type="button"
+                      className="dp-file-item__count dp-file-item__count--resumos"
+                      onClick={() => openContentModal(file, 'resumos')}
+                    >
                       {counts ? counts.resumos : '?'} Resumos
-                    </span>
-                    <span className="dp-file-item__count dp-file-item__count--flashcards">
+                    </button>
+                    <button
+                      type="button"
+                      className="dp-file-item__count dp-file-item__count--flashcards"
+                      onClick={() => openContentModal(file, 'flashcards')}
+                    >
                       {counts ? counts.flashcards : '?'} Flashcards
-                    </span>
-                    <span className="dp-file-item__count dp-file-item__count--quizzes">
+                    </button>
+                    <button
+                      type="button"
+                      className="dp-file-item__count dp-file-item__count--quizzes"
+                      onClick={() => openContentModal(file, 'quizzes')}
+                    >
                       {counts ? counts.quizzes : '?'} Quizzes
-                    </span>
+                    </button>
 
                     {/* Editar nome */}
                     <button
@@ -960,6 +1073,109 @@ export default function DocumentsPage() {
         >
           <p className="dp-modal__text">
             Tem certeza que deseja excluir <strong>"{deleteFileTarget.nome}"</strong>?{' '}
+            Esta ação não pode ser desfeita.
+          </p>
+        </Modal>
+      )}
+
+      {/* Modal: Listagem de resumos/flashcards/quizzes de um documento */}
+      {contentModal && (
+        <div
+          className="dp-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => { if (e.target === e.currentTarget) closeContentModal(); }}
+        >
+          <div className="dp-modal dp-modal--content-list">
+            <div className="dp-modal__header">
+              <h2 className="dp-modal__title">
+                {CONTENT_LABELS[contentModal.tipo].plural} — {contentModal.file.nome_documento ?? contentModal.file.nome}
+              </h2>
+              <button className="dp-modal__close" onClick={closeContentModal} aria-label="Fechar">✕</button>
+            </div>
+            <div className="dp-modal__body">
+              {contentModalError && (
+                <p className="dp-modal__text" style={{ color: '#c53030' }}>{contentModalError}</p>
+              )}
+              {isLoadingContent ? (
+                <p className="dp-modal__text">Carregando...</p>
+              ) : contentModalItems.length === 0 ? (
+                <p className="dp-modal__text">
+                  Nenhum {CONTENT_LABELS[contentModal.tipo].singular.toLowerCase()} gerado para este documento ainda.
+                </p>
+              ) : (
+                <ul className="dp-content-list">
+                  {contentModalItems.map((item) => (
+                    <li key={item.id} className="dp-content-list__item">
+                      <div className="dp-content-list__info">
+                        <span className="dp-content-list__title">{item.titulo}</span>
+                        <span className="dp-content-list__meta">
+                          Criado em {formatDate(item.criado_em)}
+                          {contentModal.tipo === 'resumos' && item.formato && ` · ${item.formato} · nível ${item.nivel_conhecimento}`}
+                        </span>
+                      </div>
+                      <div className="dp-content-list__actions">
+                        <button
+                          className="dp-file-item__icon-btn"
+                          title="Renomear"
+                          onClick={() => { setRenameContentTarget({ tipo: contentModal.tipo, id: item.id, titulo: item.titulo }); setRenameContentTitle(item.titulo); }}
+                        >
+                          {Icon.edit}
+                        </button>
+                        <button
+                          className="dp-file-item__icon-btn dp-file-item__icon-btn--danger"
+                          title="Excluir"
+                          onClick={() => setDeleteContentTarget({ tipo: contentModal.tipo, id: item.id, titulo: item.titulo })}
+                        >
+                          {Icon.trash}
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Renomear resumo/flashcard/quiz */}
+      {renameContentTarget && (
+        <Modal
+          title={`Renomear ${CONTENT_LABELS[renameContentTarget.tipo].singular.toLowerCase()}`}
+          onClose={() => { setRenameContentTarget(null); setRenameContentTitle(''); }}
+          onConfirm={saveRenameContent}
+          confirmLabel="Salvar"
+          isLoading={isSavingContent}
+          confirmDisabled={!renameContentTitle.trim()}
+        >
+          <div className="dp-modal__field">
+            <label className="dp-modal__label" htmlFor="rename-content-input">Novo título</label>
+            <input
+              id="rename-content-input"
+              className="dp-modal__input"
+              type="text"
+              value={renameContentTitle}
+              onChange={(e) => setRenameContentTitle(e.target.value)}
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && saveRenameContent()}
+            />
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal: Confirmar exclusão de resumo/flashcard/quiz */}
+      {deleteContentTarget && (
+        <Modal
+          title={`Excluir ${CONTENT_LABELS[deleteContentTarget.tipo].singular.toLowerCase()}`}
+          onClose={() => setDeleteContentTarget(null)}
+          onConfirm={confirmDeleteContent}
+          confirmLabel="Excluir"
+          confirmVariant="danger"
+          isLoading={isSavingContent}
+        >
+          <p className="dp-modal__text">
+            Tem certeza que deseja excluir <strong>"{deleteContentTarget.titulo}"</strong>?{' '}
             Esta ação não pode ser desfeita.
           </p>
         </Modal>
