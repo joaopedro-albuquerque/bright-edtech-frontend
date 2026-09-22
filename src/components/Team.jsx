@@ -21,14 +21,17 @@ export default function Team() {
           <span className="team__title-accent">vive a rotina de estudar.</span>
         </h2>
         <p className="team__mission">
-          A Bright nasceu de uma frustração bem real: estudar hoje em dia é caótico.
-          Material espalhado em pastas diferentes, ferramentas complicadas demais pra
-          um uso rápido, e nenhuma delas realmente pensada pra ajudar no dia a dia de
-          quem só quer revisar o conteúdo e seguir em frente. A gente sentia essa falta
-          na pele — de uma plataforma leve, com interface amigável, que usasse IA de
-          forma prática pra transformar qualquer material em resumo e flashcard pronto
-          pra revisão, sem fricção e sem curva de aprendizado. Foi essa necessidade que
-          nos fez construir a Bright.
+          Somos quatro estudantes de Análise e Desenvolvimento de Sistemas e a Bright
+          nasceu como nosso trabalho de conclusão de curso — mas a motivação vem de
+          um problema bem real que a gente vive na pele. Levantamos dados com outros
+          universitários e o retrato foi claro: metade nem conhece o método de
+          repetição espaçada, e boa parte de quem conhece não consegue manter a
+          constância porque não tem uma ferramenta simples pra isso. Some a isso o
+          tempo perdido procurando material espalhado em pastas e apps diferentes, e
+          fica óbvio o tamanho do problema. Foi por isso que construímos a Bright: uma
+          plataforma leve, com interface amigável, que usa IA pra transformar qualquer
+          material em resumo e flashcard prontos pra revisão — sem fricção e sem curva
+          de aprendizado.
         </p>
         <div className="team__grid">
           {founders.map((f) => (
@@ -37,7 +40,7 @@ export default function Team() {
                 <img src={f.photo} alt={f.name} />
               </div>
               <span className="team__card-name">{f.name}</span>
-              <span className="team__card-role">Co-fundador(a)</span>
+              <span className="team__card-role">Estudante de ADS</span>
             </div>
           ))}
         </div>

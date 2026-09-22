@@ -68,7 +68,7 @@ const navItems = [
 
 // API_BASE imported from config
 
-export default function Sidebar({ collapsed, onToggle }) {
+export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile }) {
   const navigate = useNavigate();
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -115,7 +115,7 @@ export default function Sidebar({ collapsed, onToggle }) {
   };
 
   return (
-    <aside className={`sidebar${collapsed ? ' sidebar--collapsed' : ''}`} aria-label="Menu lateral">
+    <aside className={`sidebar${collapsed ? ' sidebar--collapsed' : ''}${mobileOpen ? ' sidebar--open' : ''}`} aria-label="Menu lateral">
 
       {/* ── Cabeçalho: logo + botão de colapsar ── */}
       <div className="sidebar__header">
@@ -159,6 +159,7 @@ export default function Sidebar({ collapsed, onToggle }) {
                   `sidebar__nav-item${isActive ? ' sidebar__nav-item--active' : ''}`
                 }
                 title={collapsed ? item.label : undefined}
+                onClick={() => onCloseMobile?.()}
               >
                 <span className="sidebar__nav-icon">{item.icon}</span>
                 {!collapsed && (

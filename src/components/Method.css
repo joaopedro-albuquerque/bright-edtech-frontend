@@ -1,0 +1,109 @@
+.method {
+  background: #ffffff;
+  padding: 7rem 2rem;
+}
+
+.method__container {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.method__eyebrow {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #4A90D9;
+  margin: 0;
+}
+
+.method__title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(1.7rem, 3.5vw, 2.6rem);
+  font-weight: 800;
+  color: #0a1535;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.method__title-accent {
+  color: #4A90D9;
+}
+
+.method__description {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.98rem;
+  font-weight: 300;
+  color: #4a5568;
+  line-height: 1.8;
+  margin: 0.5rem 0 1rem;
+}
+
+.method__description strong {
+  color: #0a1535;
+  font-weight: 700;
+}
+
+.method__formats {
+  width: 100%;
+  margin-top: 1.5rem;
+}
+
+.method__formats-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #718096;
+  margin: 0 0 1.5rem;
+}
+
+.method__formats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  text-align: left;
+}
+
+.method__format-card {
+  background: #f7f9fc;
+  border: 1px solid rgba(74, 144, 217, 0.12);
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.method__format-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0a1535;
+}
+
+.method__format-description {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  color: #718096;
+  line-height: 1.55;
+  margin: 0;
+}
+
+@media (max-width: 700px) {
+  .method__formats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .method {
+    padding: 5rem 1.25rem;
+  }
+}

@@ -35,6 +35,7 @@ export default function DashboardLayout() {
         collapsed={collapsed}
         onToggle={() => setCollapsed((v) => !v)}
         mobileOpen={mobileOpen}
+        onCloseMobile={() => setMobileOpen(false)}
       />
 
       {/* Área de conteúdo principal */}
