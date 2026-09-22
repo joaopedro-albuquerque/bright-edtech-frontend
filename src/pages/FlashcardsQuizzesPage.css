@@ -180,6 +180,46 @@
   gap: 0.6rem;
 }
 
+.fq-lists {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.fq-list-section__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--lp-text-dark, #0a1535);
+  margin: 0 0 0.75rem;
+}
+
+.fq-list-section__count {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--lp-text-muted, #6b7280);
+  background: rgba(10, 21, 53, 0.06);
+  border-radius: 100px;
+  padding: 0.1rem 0.55rem;
+}
+
+.fq-list-section__empty {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  color: var(--lp-text-muted, #6b7280);
+  padding: 0.75rem 0;
+  margin: 0;
+}
+
+.fq-list--scroll {
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
 .fq-item {
   display: flex;
   align-items: center;

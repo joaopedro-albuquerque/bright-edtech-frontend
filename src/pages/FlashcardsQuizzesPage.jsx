@@ -484,45 +484,75 @@ export default function FlashcardsQuizzesPage() {
           </p>
         </div>
       ) : (
-        <ul className="fq-list">
-          {items.map(item => {
-            const isDue = dueIds.has(item.id);
-            const tipo  = activeTab === 'flashcards' ? 'flashcard' : 'quiz';
-            return (
-              <li
-                key={item.id}
-                className={`fq-item${isDue ? ' fq-item--due' : ''}`}
-              >
-                <div className="fq-item__icon">
-                  {activeTab === 'flashcards' ? Icon.flashcard : Icon.quiz}
-                </div>
-                <div className="fq-item__body">
-                  <p className="fq-item__title">{item.titulo}</p>
-                  <p className="fq-item__meta">
-                    {Icon.clock} Criado em {formatDate(item.criado_em)}
-                  </p>
-                </div>
-                <div className="fq-item__right">
-                  {isDue && <span className="fq-item__due-badge">Revisar hoje</span>}
-                  <button
-                    className="fq-btn fq-btn--secondary fq-item__view-btn"
-                    onClick={() => openStudy(item, tipo)}
-                  >
-                    {Icon.play}
-                    Visualizar {activeTab === 'flashcards' ? 'Flashcard' : 'Quiz'}
-                  </button>
-                  <button
-                    className="fq-item__delete-btn"
-                    onClick={() => setDeleteTarget({ id: item.id, tipo, titulo: item.titulo })}
-                    title="Excluir"
-                  >
-                    {Icon.trash}
-                  </button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        (() => {
+          const tipo = activeTab === 'flashcards' ? 'flashcard' : 'quiz';
+          const atrasados = items.filter(item => dueIds.has(item.id));
+          const emDia     = items.filter(item => !dueIds.has(item.id));
+
+          const renderItem = (item, isDue) => (
+            <li
+              key={item.id}
+              className={`fq-item${isDue ? ' fq-item--due' : ''}`}
+            >
+              <div className="fq-item__icon">
+                {activeTab === 'flashcards' ? Icon.flashcard : Icon.quiz}
+              </div>
+              <div className="fq-item__body">
+                <p className="fq-item__title">{item.titulo}</p>
+                <p className="fq-item__meta">
+                  {Icon.clock} Criado em {formatDate(item.criado_em)}
+                </p>
+              </div>
+              <div className="fq-item__right">
+                {isDue && <span className="fq-item__due-badge">Revisar hoje</span>}
+                <button
+                  className="fq-btn fq-btn--secondary fq-item__view-btn"
+                  onClick={() => openStudy(item, tipo)}
+                >
+                  {Icon.play}
+                  Visualizar {activeTab === 'flashcards' ? 'Flashcard' : 'Quiz'}
+                </button>
+                <button
+                  className="fq-item__delete-btn"
+                  onClick={() => setDeleteTarget({ id: item.id, tipo, titulo: item.titulo })}
+                  title="Excluir"
+                >
+                  {Icon.trash}
+                </button>
+              </div>
+            </li>
+          );
+
+          return (
+            <div className="fq-lists">
+              <section className="fq-list-section">
+                <h2 className="fq-list-section__title">
+                  Atrasados <span className="fq-list-section__count">{atrasados.length}</span>
+                </h2>
+                {atrasados.length === 0 ? (
+                  <p className="fq-list-section__empty">Nada atrasado por aqui — bom trabalho!</p>
+                ) : (
+                  <ul className="fq-list fq-list--scroll">
+                    {atrasados.map(item => renderItem(item, true))}
+                  </ul>
+                )}
+              </section>
+
+              <section className="fq-list-section">
+                <h2 className="fq-list-section__title">
+                  Em dia <span className="fq-list-section__count">{emDia.length}</span>
+                </h2>
+                {emDia.length === 0 ? (
+                  <p className="fq-list-section__empty">Nenhum item em dia no momento.</p>
+                ) : (
+                  <ul className="fq-list fq-list--scroll">
+                    {emDia.map(item => renderItem(item, false))}
+                  </ul>
+                )}
+              </section>
+            </div>
+          );
+        })()
       )}
 
       {/* ══════════════════════════════════════════
