@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchAuthSession } from 'aws-amplify/auth';
+import ReactMarkdown from 'react-markdown';
 import './DocumentsPage.css';
 import { API_BASE } from '../config';
 
@@ -910,8 +911,8 @@ export default function DocumentsPage() {
           confirmDisabled={false}
           onConfirm={() => { setShowSummaryModal(false); setSummaryText(''); setSummaryFileName(''); }}
         >
-          <div className="dp-modal__summary">
-            <p className="dp-modal__summary-text">{summaryText}</p>
+          <div className="dp-modal__summary dp-modal__summary--markdown">
+            <ReactMarkdown>{summaryText}</ReactMarkdown>
           </div>
         </Modal>
       )}
