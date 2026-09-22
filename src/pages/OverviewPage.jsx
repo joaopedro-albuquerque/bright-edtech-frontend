@@ -94,8 +94,13 @@ function getGreeting() {
 export default function OverviewPage() {
   const [dashboardData, setDashboardData] = useState(null);
   const [userName,      setUserName]      = useState('Carregando...');
+  const [dbUserId,      setDbUserId]      = useState(null);
   const [isLoading,     setIsLoading]     = useState(true);
   const [error,         setError]         = useState(null);
+
+  // ── Atalho "gerar resumo" a partir dos documentos recentes ──
+  const [generatingDocId, setGeneratingDocId] = useState(null);
+  const [quickResumoMsg,  setQuickResumoMsg]  = useState(null); // { docId, type: 'success'|'error', text }
 
   /* ── Carrega o dashboard da API ── */
   const loadDashboard = useCallback(async () => {
@@ -111,6 +116,7 @@ export default function OverviewPage() {
       if (!resProf.ok) throw new Error(`Erro ${resProf.status}: não foi possível carregar o perfil.`);
       const profData = await resProf.json();
       setUserName(profData.nome?.split(' ')[0] || 'Aluno');
+      setDbUserId(profData.id);
 
       // 2. Usa o UUID do banco (profData.id) para chamar o dashboard
       const resDash = await fetch(`${API_BASE}/profile/${profData.id}/dashboard`, {
@@ -128,6 +134,34 @@ export default function OverviewPage() {
 
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
 
+  /* ── Gera um resumo com valores padrão a partir do atalho rápido ── */
+  const handleQuickResumo = async (doc) => {
+    setGeneratingDocId(doc.id);
+    setQuickResumoMsg(null);
+    try {
+      const { token } = await getAuthHeaders();
+      const res = await fetch(`${API_BASE}/documentos/${doc.id}/resumos`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'X-User-Id': dbUserId,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ nivel_conhecimento: 5, formato: 'resumo_executivo', tom: 'direto' }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || `Erro ${res.status} ao gerar resumo.`);
+      }
+      setQuickResumoMsg({ docId: doc.id, type: 'success', text: 'Resumo gerado! Veja em Gestão de Documentos.' });
+      loadDashboard();
+    } catch (err) {
+      setQuickResumoMsg({ docId: doc.id, type: 'error', text: err.message });
+    } finally {
+      setGeneratingDocId(null);
+    }
+  };
+
   /* ─── Desestrutura os dados com fallbacks seguros ─── */
   const {
     total_flashcards = 0,
@@ -136,6 +170,7 @@ export default function OverviewPage() {
     ultimos_flashcards = [],
     ultimos_resumos    = [],
     ultimos_quizzes    = [],
+    documentos_recentes = [],
   } = dashboardData ?? {};
 
   const metrics = [
@@ -242,6 +277,39 @@ export default function OverviewPage() {
           ))}
         </div>
       </section>
+
+      {/* ── Atalho: gerar resumo dos últimos documentos ── */}
+      {documentos_recentes.length > 0 && (
+        <section aria-label="Gerar resumo rápido">
+          <h2 className="ov-section-title">Gerar resumo rápido</h2>
+          <ul className="ov-quick-resumo-list" role="list">
+            {documentos_recentes.slice(0, 10).map((doc) => {
+              const isGenerating = generatingDocId === doc.id;
+              const msg = quickResumoMsg?.docId === doc.id ? quickResumoMsg : null;
+              return (
+                <li key={doc.id} className="ov-quick-resumo-item">
+                  <span className="ov-quick-resumo-item__name" title={doc.nome}>{doc.nome}</span>
+                  <span className="ov-quick-resumo-item__meta">
+                    {Icon.clock} {formatDate(doc.criado_em)}
+                  </span>
+                  {msg && (
+                    <span className={`ov-quick-resumo-item__msg ov-quick-resumo-item__msg--${msg.type}`}>
+                      {msg.text}
+                    </span>
+                  )}
+                  <button
+                    className="ov-quick-resumo-item__btn"
+                    onClick={() => handleQuickResumo(doc)}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? 'Gerando...' : 'Gerar resumo'}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       {/* ── Atividade Recente ── */}
       <section aria-label="Atividade recente">
