@@ -185,7 +185,7 @@ export default function FlashcardsQuizzesPage() {
       const xUserHeader = { ...authHeader, 'X-User-Id': id };
 
       const [resDash, resRevFC, resRevQZ] = await Promise.all([
-        fetch(`${API_BASE}/profile/${id}/dashboard`,  { headers: authHeader }),
+        fetch(`${API_BASE}/profile/${id}/dashboard`,  { headers: xUserHeader }),
         fetch(`${API_BASE}/revisoes/flashcards`,       { headers: xUserHeader }),
         fetch(`${API_BASE}/revisoes/quizzes`,          { headers: xUserHeader }),
       ]);
@@ -238,7 +238,7 @@ export default function FlashcardsQuizzesPage() {
     try {
       const { token } = await getAuthHeaders();
       const id = dbUserId || await getDbUserId(token);
-      const headers = { Authorization: `Bearer ${token}` };
+      const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': id };
 
       const foldersRes = await fetch(`${API_BASE}/pastas/user/${id}/todas`, { headers });
       if (!foldersRes.ok) throw new Error('Erro ao carregar documentos.');

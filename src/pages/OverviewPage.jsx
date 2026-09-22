@@ -120,7 +120,7 @@ export default function OverviewPage() {
 
       // 2. Usa o UUID do banco (profData.id) para chamar o dashboard
       const resDash = await fetch(`${API_BASE}/profile/${profData.id}/dashboard`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, 'X-User-Id': profData.id },
       });
       if (!resDash.ok) throw new Error(`Erro ${resDash.status}: não foi possível carregar o dashboard.`);
       const dashData = await resDash.json();

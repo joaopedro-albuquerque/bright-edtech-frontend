@@ -173,7 +173,7 @@ export default function DocumentsPage() {
 
       const res = await fetch(
         `${API_BASE}/pastas/user/${bankUserId}?limit=50&offset=0`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}`, 'X-User-Id': bankUserId } }
       );
       if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível carregar as pastas.`);
       const data = await res.json();
@@ -199,7 +199,7 @@ export default function DocumentsPage() {
       const { token } = await getAuthHeaders();
       const res = await fetch(
         `${API_BASE}/pastas/${folder.id}/conteudo?limit=50&offset=0`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}`, 'X-User-Id': dbUserId } }
       );
       if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível abrir a pasta.`);
       const data = await res.json();
@@ -246,13 +246,15 @@ export default function DocumentsPage() {
 
       if (!bankUserId) throw new Error('Não foi possível obter o ID do usuário.');
 
-      console.log('Criando pasta com usuario_id:', bankUserId);
       const res = await fetch(`${API_BASE}/pastas`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'X-User-Id': bankUserId,
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           nome: newFolderName.trim(),
-          usuario_id: bankUserId,
           pasta_pai_id: currentFolderId,
         }),
       });
@@ -280,7 +282,11 @@ export default function DocumentsPage() {
       const body = new URLSearchParams({ nome: renameName.trim() });
       const res = await fetch(`${API_BASE}/pastas/${renameTarget.id}`, {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'X-User-Id': dbUserId,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
         body: body.toString(),
       });
       if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível renomear.`);
@@ -306,7 +312,7 @@ export default function DocumentsPage() {
       const { token } = await getAuthHeaders();
       const res = await fetch(`${API_BASE}/pastas/${deleteTarget.id}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, 'X-User-Id': dbUserId },
       });
       if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível deletar a pasta.`);
       setFolders((prev) => prev.filter((f) => f.id !== deleteTarget.id));
@@ -352,11 +358,12 @@ export default function DocumentsPage() {
     setIsSaving(true);
     try {
       const { token } = await getAuthHeaders();
+      const bankUserId = dbUserId || await getBankUserId(token);
       const formData = new FormData();
       formData.append('nome', renameFileName.trim());
       const res = await fetch(`${API_BASE}/documentos/${renameFileTarget.id}`, {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, 'X-User-Id': bankUserId },
         body: formData,
       });
       if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível renomear.`);
@@ -508,12 +515,11 @@ export default function DocumentsPage() {
       const formData = new FormData();
       formData.append('documento', uploadFile);
       formData.append('pasta_id', uploadFolderId);
-      formData.append('user_id', bankUserId);
       formData.append('nome_documento', uploadName.trim() || uploadFile.name);
 
       const res = await fetch(`${API_BASE}/documentos/upload`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, 'X-User-Id': bankUserId },
         body: formData,
       });
       if (!res.ok) throw new Error(`Erro ${res.status}: falha no upload.`);
