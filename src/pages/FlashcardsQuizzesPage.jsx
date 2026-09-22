@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import './FlashcardsQuizzesPage.css';
 import { API_BASE } from '../config';
@@ -144,7 +145,10 @@ export default function FlashcardsQuizzesPage() {
   const [dbUserId,      setDbUserId]      = useState(null);
   const [isLoading,     setIsLoading]     = useState(true);
   const [error,         setError]         = useState(null);
-  const [activeTab,     setActiveTab]     = useState('flashcards');
+  const [searchParams] = useSearchParams();
+  const [activeTab,     setActiveTab]     = useState(
+    searchParams.get('tab') === 'quizzes' ? 'quizzes' : 'flashcards'
+  );
 
   // ── Modal de criação ──
   const [showModal,      setShowModal]      = useState(null); // 'flashcard' | 'quiz'

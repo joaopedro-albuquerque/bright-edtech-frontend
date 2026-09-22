@@ -161,7 +161,7 @@ export default function OverviewPage() {
       value: total_quizzes,
       icon:  Icon.quiz,
       color: 'violet',
-      to:    '/quizzes',
+      to:    '/flashcards?tab=quizzes',
     },
   ];
 
@@ -294,7 +294,7 @@ export default function OverviewPage() {
             icon={Icon.quiz}
             color="violet"
             ctaLabel="Ver todos"
-            ctaTo="/flashcards"
+            ctaTo="/flashcards?tab=quizzes"
             emptyLabel="Nenhum quiz recente"
             emptyHint="Gere quizzes para testar seu conhecimento."
           >
