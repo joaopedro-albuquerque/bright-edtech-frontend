@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { Link } from 'react-router-dom';
+import QuickUploadModal from '../components/QuickUploadModal';
 import './OverviewPage.css';
 import { API_BASE } from '../config';
 
@@ -54,6 +55,11 @@ const Icon = {
       <path d="M10 10V7a6 6 0 0 1 12 0v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
     </svg>
   ),
+  plus: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M8 2v12M2 8h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  ),
 };
 
 /* ─────────────────────────────────────────────
@@ -101,6 +107,9 @@ export default function OverviewPage() {
   // ── Atalho "gerar resumo" a partir dos documentos recentes ──
   const [generatingDocId, setGeneratingDocId] = useState(null);
   const [quickResumoMsg,  setQuickResumoMsg]  = useState(null); // { docId, type: 'success'|'error', text }
+
+  // ── Upload rápido ──
+  const [showQuickUpload, setShowQuickUpload] = useState(false);
 
   /* ── Carrega o dashboard da API ── */
   const loadDashboard = useCallback(async () => {
@@ -241,17 +250,32 @@ export default function OverviewPage() {
 
       {/* ── Cabeçalho de boas-vindas ── */}
       <header className="ov-header">
-        <div className="ov-header__greeting">
-          <span className="ov-header__sparkle">{Icon.sparkle}</span>
-          <span className="ov-header__time">{getGreeting()}</span>
+        <div className="ov-header__top">
+          <div>
+            <div className="ov-header__greeting">
+              <span className="ov-header__sparkle">{Icon.sparkle}</span>
+              <span className="ov-header__time">{getGreeting()}</span>
+            </div>
+            <h1 className="ov-header__title">
+              {userName}
+            </h1>
+          </div>
+          <button className="ov-header__upload-btn" onClick={() => setShowQuickUpload(true)}>
+            {Icon.plus} Upload rápido
+          </button>
         </div>
-        <h1 className="ov-header__title">
-          {userName}
-        </h1>
         <p className="ov-header__sub">
           Sua IA já processou os novos materiais. Por onde vamos começar hoje?
         </p>
       </header>
+
+      {showQuickUpload && dbUserId && (
+        <QuickUploadModal
+          dbUserId={dbUserId}
+          onClose={() => setShowQuickUpload(false)}
+          onUploaded={() => loadDashboard()}
+        />
+      )}
 
       {/* ── Métricas ── */}
       <section aria-label="Métricas gerais">

@@ -40,6 +40,31 @@
   animation: ovFadeUp 0.5s cubic-bezier(0.22,1,0.36,1) both;
 }
 
+.ov-header__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.ov-header__upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--ov-blue, #4A90D9);
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 1.1rem;
+  cursor: pointer;
+  white-space: nowrap;
+  margin-top: 0.3rem;
+}
+
 .ov-header__greeting {
   display: inline-flex;
   align-items: center;
