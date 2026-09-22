@@ -5,7 +5,7 @@ export default function Hero() {
   const navigate = useNavigate();
 
   const handleCTA = () => {
-    navigate('/login');
+    navigate('/signup');
   };
 
   return (

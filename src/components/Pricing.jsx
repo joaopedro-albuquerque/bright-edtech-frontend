@@ -52,8 +52,9 @@ const plans = [
 export default function Pricing() {
   const navigate = useNavigate();
 
-  const handlePlanCTA = () => {
-    navigate('/login');
+  const handlePlanCTA = (planId) => {
+    // Institucional ainda não tem um destino de contato dedicado — mantém /login por ora.
+    navigate(planId === 'institucional' ? '/login' : '/signup');
   };
 
   return (

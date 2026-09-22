@@ -24,7 +24,7 @@ export default function Feature() {
   const navigate = useNavigate();
 
   const handleCTA = () => {
-    navigate('/login');
+    navigate('/signup');
   };
 
   return (

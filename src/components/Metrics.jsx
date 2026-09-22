@@ -11,7 +11,7 @@ export default function Metrics() {
   const navigate = useNavigate();
 
   const handleCTA = () => {
-    navigate('/login');
+    navigate('/signup');
   };
 
   return (
