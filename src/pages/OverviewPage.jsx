@@ -5,6 +5,7 @@ import QuickUploadModal from '../components/QuickUploadModal';
 import StudyModal from '../components/StudyModal';
 import './OverviewPage.css';
 import { API_BASE } from '../config';
+import { RESUMO_FORMATOS } from '../constants/resumoFormatos';
 
 /* ─────────────────────────────────────────────
    ÍCONES SVG INLINE
@@ -59,6 +60,12 @@ const Icon = {
   plus: (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <path d="M8 2v12M2 8h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  ),
+  eye: (
+    <svg width="15" height="15" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M1 9s2.8-5.5 8-5.5S17 9 17 9s-2.8 5.5-8 5.5S1 9 1 9Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+      <circle cx="9" cy="9" r="2.3" stroke="currentColor" strokeWidth="1.4" />
     </svg>
   ),
 };
@@ -164,10 +171,14 @@ export default function OverviewPage() {
 
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
 
-  /* ── Gera um resumo com valores padrão a partir do atalho rápido ── */
-  const handleQuickResumo = async (doc) => {
+  /* ── Gera um resumo a partir do atalho rápido, formato escolhido pelo usuário ── */
+  const [quickResumoTarget, setQuickResumoTarget] = useState(null); // doc
+  const [quickResumoFormat, setQuickResumoFormat] = useState('cornell');
+
+  const handleQuickResumo = async (doc, formato) => {
     setGeneratingDocId(doc.id);
     setQuickResumoMsg(null);
+    setQuickResumoTarget(null);
     try {
       const { token } = await getAuthHeaders();
       const res = await fetch(`${API_BASE}/documentos/${doc.id}/resumos`, {
@@ -177,7 +188,7 @@ export default function OverviewPage() {
           'X-User-Id': dbUserId,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ nivel_conhecimento: 5, formato: 'resumo_executivo', tom: 'direto' }),
+        body: JSON.stringify({ nivel_conhecimento: 5, formato, tom: 'direto' }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -344,7 +355,7 @@ export default function OverviewPage() {
                   )}
                   <button
                     className="ov-quick-resumo-item__btn"
-                    onClick={() => handleQuickResumo(doc)}
+                    onClick={() => { setQuickResumoTarget(doc); setQuickResumoFormat('cornell'); }}
                     disabled={isGenerating}
                   >
                     {isGenerating ? 'Gerando...' : 'Gerar resumo'}
@@ -432,6 +443,40 @@ export default function OverviewPage() {
         <StudyModal item={studyItem} tipo={studyItem.tipo} onClose={() => setStudyItem(null)} />
       )}
 
+      {/* ── Modal: escolher formato do resumo rápido ── */}
+      {quickResumoTarget && (
+        <div className="ov-overlay" role="dialog" aria-modal="true" onClick={() => setQuickResumoTarget(null)}>
+          <div className="ov-format-modal" onClick={e => e.stopPropagation()}>
+            <div className="ov-format-modal__header">
+              <h2 className="ov-format-modal__title">Novo Resumo</h2>
+              <button className="ov-format-modal__close" onClick={() => setQuickResumoTarget(null)} aria-label="Fechar">✕</button>
+            </div>
+            <p className="ov-format-modal__label">Formato do resumo</p>
+            <div className="ov-format-modal__options">
+              {RESUMO_FORMATOS.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`ov-format-btn${quickResumoFormat === opt.value ? ' ov-format-btn--selected' : ''}`}
+                  onClick={() => setQuickResumoFormat(opt.value)}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="ov-format-modal__description">
+              {RESUMO_FORMATOS.find(f => f.value === quickResumoFormat)?.description}
+            </p>
+            <div className="ov-format-modal__footer">
+              <button className="ov-format-modal__cancel" onClick={() => setQuickResumoTarget(null)}>Cancelar</button>
+              <button className="ov-format-modal__confirm" onClick={() => handleQuickResumo(quickResumoTarget, quickResumoFormat)}>
+                Gerar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -489,6 +534,7 @@ function ActivityItem({ title, meta, icon, onClick, disabled = false }) {
           {icon}
           {meta}
         </span>
+        <span className="ov-activity-item__eye" title="Visualizar">{Icon.eye}</span>
       </button>
     </li>
   );

@@ -745,6 +745,20 @@
 
 .fq-quiz__option:disabled { cursor: default; }
 
+.fq-quiz__option--selected {
+  border-color: #4a90d9 !important;
+  background: rgba(74,144,217,0.06) !important;
+  color: #2c5282;
+}
+
+.fq-quiz__option--selected .fq-quiz__letter { background: rgba(74,144,217,0.15); }
+
+.fq-quiz__verify-btn {
+  margin-top: 1rem;
+  width: 100%;
+  justify-content: center;
+}
+
 .fq-quiz__option--correct {
   border-color: #38a169 !important;
   background: rgba(56,161,105,0.07) !important;

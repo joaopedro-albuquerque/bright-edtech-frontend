@@ -70,13 +70,14 @@ async function getDbUserId(token) {
 export default function StudyModal({ item, tipo, onClose }) {
   const isFlashcard = tipo === 'flashcard';
 
-  const [cards,       setCards]       = useState([]);
-  const [isLoading,   setIsLoading]   = useState(true);
-  const [error,       setError]       = useState('');
-  const [cardIndex,   setCardIndex]   = useState(0);
-  const [flipped,     setFlipped]     = useState(false);
-  const [answersMap,  setAnswersMap]  = useState({}); // { [cardIndex]: alternativaEscolhidaIndex }
-  const [showSummary, setShowSummary] = useState(false);
+  const [cards,          setCards]          = useState([]);
+  const [isLoading,      setIsLoading]      = useState(true);
+  const [error,          setError]          = useState('');
+  const [cardIndex,      setCardIndex]      = useState(0);
+  const [flipped,        setFlipped]        = useState(false);
+  const [selectedOption, setSelectedOption] = useState(null); // opção marcada, ainda não verificada
+  const [answersMap,     setAnswersMap]     = useState({}); // { [cardIndex]: alternativaEscolhidaIndex } — já verificadas
+  const [showSummary,    setShowSummary]    = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,10 +107,11 @@ export default function StudyModal({ item, tipo, onClose }) {
   }, [item.id, isFlashcard]);
 
   const currentCard = cards[cardIndex];
-  const answeredIndex = answersMap[cardIndex] ?? null;
+  const verifiedIndex = answersMap[cardIndex]; // undefined = ainda não verificada nesta questão
+  const isVerified = verifiedIndex !== undefined;
 
-  const nextCard = () => { setCardIndex(i => i + 1); setFlipped(false); };
-  const prevCard = () => { setCardIndex(i => i - 1); setFlipped(false); };
+  const nextCard = () => { setCardIndex(i => i + 1); setFlipped(false); setSelectedOption(null); };
+  const prevCard = () => { setCardIndex(i => i - 1); setFlipped(false); setSelectedOption(null); };
 
   const avaliarCartao = async (qualidade) => {
     try {
@@ -126,8 +128,16 @@ export default function StudyModal({ item, tipo, onClose }) {
     if (cardIndex < cards.length - 1) nextCard(); else onClose();
   };
 
-  const answerQuiz = async (index) => {
-    if (answeredIndex !== null) return;
+  /* ── Marca a alternativa escolhida (ainda não confirma nem revela cor) ── */
+  const selectOption = (index) => {
+    if (isVerified) return;
+    setSelectedOption(index);
+  };
+
+  /* ── Confirma a resposta marcada: revela certo/errado e avalia (SM-2) ── */
+  const verifyAnswer = async () => {
+    if (selectedOption === null || isVerified) return;
+    const index = selectedOption;
     setAnswersMap(prev => ({ ...prev, [cardIndex]: index }));
 
     const alt = currentCard.conteudo?.alternativas?.[index];
@@ -241,15 +251,16 @@ export default function StudyModal({ item, tipo, onClose }) {
                   <ul className="fq-quiz__options">
                     {(currentCard.conteudo?.alternativas || []).map((alt, i) => {
                       const isCorrect = alt === currentCard.conteudo?.resposta_correta;
-                      const isChosen  = i === answeredIndex;
                       let cls = 'fq-quiz__option';
-                      if (answeredIndex !== null) {
-                        if (isCorrect)     cls += ' fq-quiz__option--correct';
-                        else if (isChosen) cls += ' fq-quiz__option--wrong';
+                      if (isVerified) {
+                        if (isCorrect)             cls += ' fq-quiz__option--correct';
+                        else if (i === verifiedIndex) cls += ' fq-quiz__option--wrong';
+                      } else if (i === selectedOption) {
+                        cls += ' fq-quiz__option--selected';
                       }
                       return (
                         <li key={i}>
-                          <button className={cls} onClick={() => answerQuiz(i)} disabled={answeredIndex !== null}>
+                          <button className={cls} onClick={() => selectOption(i)} disabled={isVerified}>
                             <span className="fq-quiz__letter">{String.fromCharCode(65 + i)}</span>
                             {alt}
                           </button>
@@ -257,6 +268,15 @@ export default function StudyModal({ item, tipo, onClose }) {
                       );
                     })}
                   </ul>
+                  {!isVerified && (
+                    <button
+                      className="fq-btn fq-btn--primary fq-quiz__verify-btn"
+                      onClick={verifyAnswer}
+                      disabled={selectedOption === null}
+                    >
+                      Verificar resposta
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -286,7 +306,7 @@ export default function StudyModal({ item, tipo, onClose }) {
                       else if (isFlashcard) onClose();
                       else setShowSummary(true);
                     }}
-                    disabled={!isFlashcard && answeredIndex === null}
+                    disabled={!isFlashcard && !isVerified}
                   >
                     {cardIndex < cards.length - 1 ? <>Próximo {Icon.arrowRight}</> : 'Concluir'}
                   </button>

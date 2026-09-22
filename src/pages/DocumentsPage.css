@@ -448,7 +448,9 @@
 }
 
 .dp-modal {
+  color-scheme: light;
   background: #ffffff;
+  color: #1f2937;
   border-radius: 16px;
   width: 100%;
   max-width: 420px;

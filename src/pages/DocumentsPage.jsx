@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import './DocumentsPage.css';
 import { API_BASE } from '../config';
 import StudyModal from '../components/StudyModal';
+import { RESUMO_FORMATOS } from '../constants/resumoFormatos';
 
 /* ─────────────────────────────────────────────
    ÍCONES SVG INLINE
@@ -32,6 +33,12 @@ const Icon = {
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
       <path d="M9 12V4M5 7l4-4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M3 14h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  ),
+  eye: (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M1 9s2.8-5.5 8-5.5S17 9 17 9s-2.8 5.5-8 5.5S1 9 1 9Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+      <circle cx="9" cy="9" r="2.3" stroke="currentColor" strokeWidth="1.4" />
     </svg>
   ),
   download: (
@@ -150,12 +157,7 @@ export default function DocumentsPage() {
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [newSummaryTarget, setNewSummaryTarget] = useState(null); // file
   const [newSummaryFormat, setNewSummaryFormat] = useState('cornell');
-
-  const RESUMO_FORMATOS = [
-    { value: 'resumo_executivo',    label: 'Executivo',   description: 'Bullet points diretos com os tópicos principais — ideal pra revisão rápida (3-5 min).' },
-    { value: 'cornell',             label: 'Cornell',     description: 'Perguntas-gatilho ao lado das respostas — ideal pra estudo ativo e autoteste.' },
-    { value: 'fichamento_academico', label: 'Fichamento', description: 'Citações diretas, metodologia e apreciação crítica — ideal pra pesquisa acadêmica formal.' },
-  ];
+  const [summaryReturnTo,  setSummaryReturnTo]  = useState(null); // file a reabrir na lista ao fechar a visualização
   const [openMenuId, setOpenMenuId] = useState(null); // id da pasta com menu aberto
   const menuRef = useRef(null);
 
@@ -477,6 +479,7 @@ export default function DocumentsPage() {
       setSummaryText(contentData.conteudo || 'Nenhum conteúdo de resumo.');
       setSummaryFileName(file.nome_documento ?? file.nome);
       setSummaryResumoId(created.id);
+      setSummaryReturnTo(file);
       setNewSummaryTarget(null);
       setShowSummaryModal(true);
     } catch (err) {
@@ -490,6 +493,7 @@ export default function DocumentsPage() {
 
   /* ── Visualiza um resumo já gerado (a partir da listagem) ── */
   const viewResumo = async (item) => {
+    const originFile = contentModal?.file;
     try {
       const { token } = await getAuthHeaders();
       const bankUserId = dbUserId || await getBankUserId(token);
@@ -500,6 +504,7 @@ export default function DocumentsPage() {
       setSummaryText(data.conteudo || 'Nenhum conteúdo de resumo.');
       setSummaryFileName(item.titulo);
       setSummaryResumoId(item.id);
+      setSummaryReturnTo(originFile ?? null);
       closeContentModal();
       setShowSummaryModal(true);
     } catch (err) {
@@ -553,6 +558,17 @@ export default function DocumentsPage() {
     setContentModal(null);
     setContentModalItems([]);
     setContentModalError('');
+  };
+
+  /* ── Fecha a visualização de resumo, voltando pra lista de origem (se houver) ── */
+  const closeSummaryModal = () => {
+    const returnFile = summaryReturnTo;
+    setShowSummaryModal(false);
+    setSummaryText('');
+    setSummaryFileName('');
+    setSummaryResumoId(null);
+    setSummaryReturnTo(null);
+    if (returnFile) openContentModal(returnFile, 'resumos');
   };
 
   /* ── Geração rápida de flashcard/quiz direto do Document Hub ── */
@@ -1137,10 +1153,10 @@ export default function DocumentsPage() {
         <Modal
           title={`Resumo: ${summaryFileName}`}
           className="dp-modal--summary"
-          onClose={() => { setShowSummaryModal(false); setSummaryText(''); setSummaryFileName(''); setSummaryResumoId(null); }}
+          onClose={closeSummaryModal}
           confirmLabel="Fechar"
           confirmDisabled={false}
-          onConfirm={() => { setShowSummaryModal(false); setSummaryText(''); setSummaryFileName(''); setSummaryResumoId(null); }}
+          onConfirm={closeSummaryModal}
         >
           {summaryResumoId && (
             <button
@@ -1263,7 +1279,7 @@ export default function DocumentsPage() {
                               closeContentModal();
                             }}
                           >
-                            {Icon.file}
+                            {Icon.eye}
                           </button>
                         )}
                         {contentModal.tipo === 'resumos' && (
@@ -1273,7 +1289,7 @@ export default function DocumentsPage() {
                               title="Visualizar"
                               onClick={() => viewResumo(item)}
                             >
-                              {Icon.file}
+                              {Icon.eye}
                             </button>
                             <button
                               className="dp-file-item__icon-btn"

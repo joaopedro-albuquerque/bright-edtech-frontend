@@ -407,6 +407,24 @@
 .ov-activity-item__btn:hover:not(:disabled) { background: rgba(10, 21, 53, 0.025); }
 .ov-activity-item__btn:disabled { cursor: default; opacity: 0.6; }
 
+.ov-activity-item__eye {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: rgba(10, 21, 53, 0.4);
+  background: rgba(10, 21, 53, 0.05);
+  transition: color 0.15s, background 0.15s;
+}
+
+.ov-activity-item__btn:hover .ov-activity-item__eye {
+  color: #ffffff;
+  background: var(--lp-primary, #4a90d9);
+}
+
 .ov-activity-item__title {
   font-family: 'DM Sans', sans-serif;
   font-size: 0.83rem;
@@ -613,6 +631,122 @@
     flex-wrap: wrap;
   }
   .ov-quick-resumo-item__name { flex-basis: 100%; }
+}
+
+/* ── Modal: escolher formato do resumo rápido ── */
+.ov-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 21, 53, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 100;
+}
+
+.ov-format-modal {
+  color-scheme: light;
+  background: #ffffff;
+  color: #1f2937;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 400px;
+  padding: 1.4rem;
+  box-shadow: 0 24px 60px rgba(7, 13, 72, 0.3);
+}
+
+.ov-format-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.ov-format-modal__title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--lp-text-dark, #0a1535);
+  margin: 0;
+}
+
+.ov-format-modal__close {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: rgba(10, 21, 53, 0.5);
+  font-size: 1rem;
+}
+
+.ov-format-modal__label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--lp-text-muted, #6b7280);
+  margin: 0 0 0.5rem;
+}
+
+.ov-format-modal__options {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ov-format-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(10, 21, 53, 0.12);
+  background: none;
+  color: var(--lp-text-dark, #0a1535);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.ov-format-btn:hover { border-color: rgba(74, 144, 217, 0.4); }
+
+.ov-format-btn--selected {
+  border-color: #4a90d9;
+  background: rgba(74, 144, 217, 0.1);
+  color: #2c5282;
+  font-weight: 600;
+}
+
+.ov-format-modal__description {
+  margin: 0.6rem 0 0;
+  font-size: 0.8rem;
+  color: var(--lp-text-muted, #6b7280);
+  line-height: 1.5;
+}
+
+.ov-format-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+
+.ov-format-modal__cancel,
+.ov-format-modal__confirm {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.55rem 1.1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  border: none;
+}
+
+.ov-format-modal__cancel {
+  background: rgba(10, 21, 53, 0.06);
+  color: var(--lp-text-dark, #0a1535);
+}
+
+.ov-format-modal__confirm {
+  background: var(--lp-text-dark, #0a1535);
+  color: #ffffff;
 }
 
 @media (max-width: 480px) {
