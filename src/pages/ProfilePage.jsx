@@ -89,17 +89,16 @@ export default function ProfilePage() {
     setIsLoading(true);
     setError(null);
     try {
-      const { token } = await getAuthHeaders();
+      const { token, userId: uid, email: em } = await getAuthHeaders();
+      setUserId(uid);
+      setEmail(em);
 
-      // Busca o perfil pelo token (resolve o sub do Cognito -> UUID do banco)
-      const res = await fetch(`${API_BASE}/profile`, {
+      const res = await fetch(`${API_BASE}/profile/${uid}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível carregar o perfil.`);
 
       const data = await res.json();
-      setUserId(data.id);
-      setEmail(data.email ?? '');
 
       /* O back-end envia "nome" como string completa.
          Quebramos no primeiro espaço para separar nome e sobrenome. */
@@ -140,10 +139,9 @@ export default function ProfilePage() {
         method:  'PUT',
         headers: {
           Authorization:  `Bearer ${token}`,
-          'X-User-Id':    userId,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, nome: nomeCompleto }),
+        body: JSON.stringify({ nome: nomeCompleto }),
       });
       if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível salvar as alterações.`);
 
@@ -173,7 +171,7 @@ export default function ProfilePage() {
       // 1. Remove do back-end
       const res = await fetch(`${API_BASE}/profile/${userId}`, {
         method:  'DELETE',
-        headers: { Authorization: `Bearer ${token}`, 'X-User-Id': userId },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`Erro ${res.status}: falha ao excluir conta no servidor.`);
 
