@@ -4,7 +4,8 @@ import logoBright from '../assets/Logo-Edtech.png';
 const navLinks = [
   { label: 'Início', href: '#' },
   { label: 'Funcionalidades', href: '#feature' },
-  { label: 'Planos', href: '#pricing' },
+  { label: 'Quem somos', href: '#team' },
+  { label: 'Tecnologia', href: '#tech' },
 ];
 
 export default function Footer() {

@@ -2,9 +2,9 @@ import { useNavigate } from 'react-router-dom';
 import './Metrics.css';
 
 const metrics = [
-  { value: '10k+', label: 'Flashcards Gerados' },
-  { value: '500+', label: 'Documentos Gerados' },
-  { value: '24/7', label: 'Organização Automática' },
+  { value: '🤖', label: 'IA que organiza e resume por você' },
+  { value: '⚡', label: 'Do PDF ao flashcard em segundos' },
+  { value: '🎯', label: 'Revisão espaçada baseada em ciência' },
 ];
 
 export default function Metrics() {
@@ -17,13 +17,13 @@ export default function Metrics() {
   return (
     <section className="metrics">
       <div className="metrics__container">
-        <p className="metrics__eyebrow">Resultados reais</p>
+        <p className="metrics__eyebrow">Comece agora</p>
         <h2 className="metrics__title">
           O futuro dos seus estudos<br />
           <span className="metrics__title-accent">começa aqui.</span>
         </h2>
         <p className="metrics__subtitle">
-          Junte-se a quem já reduz o tempo de revisão e aprende com mais confiança.
+          Sem cadastro de cartão, sem enrolação. Suba seu primeiro material e veja a Bright em ação.
         </p>
         <div className="metrics__grid">
           {metrics.map((m, i) => (
