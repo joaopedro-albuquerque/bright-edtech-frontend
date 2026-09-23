@@ -22,7 +22,7 @@ export default function DashboardLayout() {
   const [tourSteps, setTourSteps] = useState([]);
   const [userId, setUserId] = useState(null);
 
-  // 2. Busca no banco de dados se o usuário já fez o tour
+  // 2. Busca no banco de dados se o usuário já fez o tour usando GET /profile
   useEffect(() => {
     async function carregarStatusTour() {
       try {
@@ -31,10 +31,10 @@ export default function DashboardLayout() {
         const uid     = session.tokens.idToken.payload.sub;
         setUserId(uid);
 
-        const res = await fetch(`${API_BASE}/profile/${uid}`, {
+        const res = await fetch(`${API_BASE}/profile`, {
           headers: { 
             'Authorization': `Bearer ${token}`,
-            'X-User-Id': uid // <-- Cabeçalho obrigatório exigido pelo backend
+            'X-User-Id': uid // Cabeçalho obrigatório exigido pelo backend
           },
         });
         
@@ -86,7 +86,7 @@ export default function DashboardLayout() {
     }
   }, [location.pathname]);
 
-  // 4. Salva no banco de dados quando o usuário pula ou finaliza
+  // 4. Salva no banco de dados quando o usuário pula ou finaliza usando PUT /profile
   const handleJoyrideCallback = async (data) => {
     const { status } = data;
 
@@ -99,11 +99,11 @@ export default function DashboardLayout() {
           const token   = session.tokens.idToken.toString();
           const uid     = session.tokens.idToken.payload.sub;
 
-          await fetch(`${API_BASE}/profile/${uid}`, {
+          await fetch(`${API_BASE}/profile`, {
             method: 'PUT',
             headers: {
               'Authorization': `Bearer ${token}`,
-              'X-User-Id': uid, // <-- Cabeçalho obrigatório exigido pelo backend
+              'X-User-Id': uid, // Cabeçalho obrigatório exigido pelo backend
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ tour_concluido: true }),
