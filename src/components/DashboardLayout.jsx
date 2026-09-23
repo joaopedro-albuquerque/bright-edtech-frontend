@@ -33,12 +33,44 @@ function getStepsForRoute(pathname) {
           placement: 'center',
           disableBeacon: true,
           title: 'Bem-vindo ao Bright EdTech! 👋',
-          content: 'Vamos fazer um tour rápido pelas principais áreas da plataforma.',
+          content: 'Vamos fazer um tour completo pelas principais áreas da plataforma. Você pode pular a qualquer momento.',
         },
         {
           target: '.tour-boas-vindas',
           disableBeacon: true,
           content: 'Este é o seu painel principal: aqui você acompanha os resumos, flashcards e quizzes gerados a partir dos seus materiais.',
+        },
+        {
+          target: '.ov-header__upload-btn',
+          disableBeacon: true,
+          content: 'Use o Upload rápido para enviar um novo documento sem precisar navegar até a página de documentos.',
+        },
+        {
+          target: '.ov-metrics-grid',
+          disableBeacon: true,
+          content: 'Aqui ficam as métricas gerais: total de flashcards, resumos e quizzes já gerados. Clique em qualquer cartão para ver a lista completa.',
+        },
+        {
+          target: '.ov-quick-resumo-list',
+          disableBeacon: true,
+          content: 'A partir dos seus documentos mais recentes, você pode gerar um novo resumo com um clique, escolhendo o formato desejado.',
+        },
+        {
+          target: '.ov-activity-grid',
+          disableBeacon: true,
+          content: 'Na atividade recente você encontra os últimos flashcards, resumos e quizzes criados, com acesso rápido para revisar cada um.',
+        },
+        {
+          target: '.sidebar__nav',
+          placement: 'right',
+          disableBeacon: true,
+          content: 'Use o menu lateral para navegar entre Visão Geral, Gestão de Documentos e Revisão Geral.',
+        },
+        {
+          target: '.sidebar__profile',
+          placement: 'right',
+          disableBeacon: true,
+          content: 'Aqui você acessa o seu perfil e, quando quiser, encerra a sessão com o botão de sair.',
         },
       ];
     case '/documents':
@@ -48,6 +80,21 @@ function getStepsForRoute(pathname) {
           disableBeacon: true,
           content: 'Aqui você cria pastas para organizar seus documentos e envia novos arquivos para gerar resumos, flashcards e quizzes.',
         },
+        {
+          target: '.dp-breadcrumb',
+          disableBeacon: true,
+          content: 'Use a navegação de trilha para saber em qual pasta você está e voltar rapidamente para pastas anteriores.',
+        },
+        {
+          target: '.dp-grid',
+          disableBeacon: true,
+          content: 'Suas pastas aparecem aqui. Clique para abrir, ou use o menu de opções (⋮) para renomear ou excluir.',
+        },
+        {
+          target: '.dp-file-list',
+          disableBeacon: true,
+          content: 'Os arquivos de cada pasta ficam listados aqui. Use o botão de IA para gerar um novo resumo, ou os contadores para ver resumos, flashcards e quizzes já criados a partir do documento.',
+        },
       ];
     case '/revisao-geral':
       return [
@@ -56,6 +103,21 @@ function getStepsForRoute(pathname) {
           disableBeacon: true,
           content: 'Aqui ficam todos os seus flashcards e quizzes gerados, prontos para revisão.',
         },
+        {
+          target: '.fq-header__actions',
+          disableBeacon: true,
+          content: 'Crie um novo Quiz ou Flashcard a partir de um documento já enviado. Quando houver itens atrasados para revisar, um aviso aparece aqui também.',
+        },
+        {
+          target: '.fq-tabs',
+          disableBeacon: true,
+          content: 'Alterne entre as abas de Flashcards e Quizzes para ver cada tipo de conteúdo separadamente.',
+        },
+        {
+          target: '.fq-lists',
+          disableBeacon: true,
+          content: 'Os itens são organizados entre "Atrasados", que precisam de revisão hoje, e "Em dia". Clique em Visualizar para estudar ou na lixeira para excluir.',
+        },
       ];
     case '/profile':
       return [
@@ -63,6 +125,16 @@ function getStepsForRoute(pathname) {
           target: '.pf-header__name',
           disableBeacon: true,
           content: 'Aqui você gerencia o seu nome público e as configurações da sua conta.',
+        },
+        {
+          target: '.pf-card:not(.pf-card--danger)',
+          disableBeacon: true,
+          content: 'Em Informações pessoais você pode atualizar seu nome e sobrenome. O e-mail é somente leitura, pois está vinculado ao seu login.',
+        },
+        {
+          target: '.pf-card--danger',
+          disableBeacon: true,
+          content: 'Na zona de perigo você pode excluir permanentemente a sua conta. Essa ação não pode ser desfeita.',
         },
       ];
     default:
