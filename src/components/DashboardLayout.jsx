@@ -99,14 +99,31 @@ export default function DashboardLayout() {
           const token   = session.tokens.idToken.toString();
           const uid     = session.tokens.idToken.payload.sub;
 
-          await fetch(`${API_BASE}/profile`, {
+          // 1. Primeiro, buscamos os dados atuais do perfil para não sobrescrever campos com nulos/vazios
+          const getRes = await fetch(`${API_BASE}/profile`, {
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'X-User-Id': uid 
+            },
+          });
+          
+          let perfilAtual = {};
+          if (getRes.ok) {
+            perfilAtual = await getRes.json();
+          }
+
+          // 2. Enviamos o objeto completo atualizado com o tour concluído
+          await fetch(`${API_BASE}/profile/${uid}`, { // Ou `${API_BASE}/profile/${uid}` se a sua rota pedir o ID no path
             method: 'PUT',
             headers: {
               'Authorization': `Bearer ${token}`,
-              'X-User-Id': uid, // Cabeçalho obrigatório exigido pelo backend
+              'X-User-Id': uid,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ tour_concluido: true }),
+            body: JSON.stringify({
+              ...perfilAtual,
+              tour_concluido: true,
+            }),
           });
         } catch (error) {
           console.error('Erro ao salvar conclusão do tour:', error);
