@@ -246,7 +246,12 @@ export default function DocumentsPage() {
       setFolders(data.subpastas ?? []);
       const filesData = data.arquivos ?? [];
       setFiles(filesData);
-      setFileCounts({});
+      // Inicializa em 0 para não mostrar placeholder enquanto a API carrega
+      setFileCounts(
+        Object.fromEntries(
+          filesData.map((f) => [f.id, { resumos: 0, flashcards: 0, quizzes: 0 }])
+        )
+      );
       if (filesData.length > 0 && dbUserId) {
         loadFileCounts(filesData, token, dbUserId);
       }
@@ -940,7 +945,7 @@ export default function DocumentsPage() {
           <ul className="dp-file-list" data-tour="dp-file-list">
             {files.map((file, fileIndex) => {
               const isThisGenerating = isGenerating && generatingFileId === file.id;
-              const counts = fileCounts[file.id];
+              const counts = fileCounts[file.id] ?? { resumos: 0, flashcards: 0, quizzes: 0 };
               const displayName = file.nome_documento ?? file.nome;
               const isFirstFile = fileIndex === 0;
               return (
@@ -981,21 +986,21 @@ export default function DocumentsPage() {
                         className="dp-file-item__count dp-file-item__count--resumos"
                         onClick={() => openContentModal(file, 'resumos')}
                       >
-                        {counts?.resumos ?? 0} Resumos
+                        {counts.resumos} Resumos
                       </button>
                       <button
                         type="button"
                         className="dp-file-item__count dp-file-item__count--flashcards"
                         onClick={() => openContentModal(file, 'flashcards')}
                       >
-                        {counts?.flashcards ?? 0} Flashcards
+                        {counts.flashcards} Flashcards
                       </button>
                       <button
                         type="button"
                         className="dp-file-item__count dp-file-item__count--quizzes"
                         onClick={() => openContentModal(file, 'quizzes')}
                       >
-                        {counts?.quizzes ?? 0} Quizzes
+                        {counts.quizzes} Quizzes
                       </button>
                     </div>
 
