@@ -32,8 +32,13 @@ export default function DashboardLayout() {
         setUserId(uid);
 
         const res = await fetch(`${API_BASE}/profile/${uid}`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'X-User-Id': uid // <-- Cabeçalho exigido pelo backend incluído na leitura
+          },
         });
+        
+        if (!res.ok) return;
         const data = await res.json();
 
         // Ativa o tour se a coluna for falsa ou inexistente
@@ -45,7 +50,6 @@ export default function DashboardLayout() {
         console.error('Erro ao verificar status do tour:', error);
 
         // Em caso de erro (ex: testando local sem a coluna), forçamos para testar a UI
-        // Remova ou comente a linha abaixo quando a API estiver pronta
         setTimeout(() => setRunTour(true), 500);
       }
     }
@@ -103,7 +107,7 @@ export default function DashboardLayout() {
             method: 'PUT',
             headers: {
               'Authorization': `Bearer ${token}`,
-              'X-User-Id': uid, // <-- Incluir também aqui
+              'X-User-Id': uid, // <-- Cabeçalho exigido pelo backend incluído na atualização
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ tour_concluido: true }),
