@@ -107,6 +107,16 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
     setLoggingOut(true);
     try {
       await signOut();
+
+      // Limpa o estado local do tour (sessionStorage) no logout. Assim,
+      // enquanto o tour_concluido do backend estiver desativado (ver
+      // DashboardLayout.jsx), o tour volta a aparecer no próximo login
+      // mesmo que o usuário não tenha fechado a aba/navegador.
+      try {
+        sessionStorage.removeItem('brightedtech:tourSeenRoutes');
+        sessionStorage.removeItem('brightedtech:tourCompletedLocally');
+      } catch { /* noop */ }
+
       navigate('/login');
     } catch (err) {
       console.error('Erro ao sair:', err);

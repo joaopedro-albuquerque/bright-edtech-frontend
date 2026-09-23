@@ -14,7 +14,14 @@ const TOUR_ROUTES = ['/dashboard', '/documents', '/revisao-geral', '/profile'];
 const TOUR_SEEN_STORAGE_KEY = 'brightedtech:tourSeenRoutes';
 // Fallback local enquanto o backend não tem a coluna/flag `tour_concluido`.
 // Assim que o backend passar a devolver esse campo, ele manda; até lá,
-// usamos esta chave para lembrar que o usuário já concluiu o tour neste navegador.
+// usamos esta chave para lembrar que o usuário já concluiu o tour NESTA SESSÃO.
+//
+// Importante: usamos sessionStorage (não localStorage) de propósito. Por
+// enquanto o tour deve rodar em toda sessão ativa — ou seja, a cada novo
+// login (logout + login) o tour deve aparecer de novo. O sessionStorage já
+// nos ajuda nisso (limpa ao fechar a aba), e o handleLogout do Sidebar
+// também limpa essas chaves explicitamente para cobrir o caso de logout
+// sem fechar a aba/navegador.
 const TOUR_COMPLETED_STORAGE_KEY = 'brightedtech:tourCompletedLocally';
 
 function getStepsForRoute(pathname) {
@@ -65,7 +72,7 @@ function getStepsForRoute(pathname) {
 
 function loadSeenRoutes() {
   try {
-    const raw = localStorage.getItem(TOUR_SEEN_STORAGE_KEY);
+    const raw = sessionStorage.getItem(TOUR_SEEN_STORAGE_KEY);
     return raw ? new Set(JSON.parse(raw)) : new Set();
   } catch {
     return new Set();
@@ -74,7 +81,7 @@ function loadSeenRoutes() {
 
 function loadLocalTourCompleted() {
   try {
-    return localStorage.getItem(TOUR_COMPLETED_STORAGE_KEY) === 'true';
+    return sessionStorage.getItem(TOUR_COMPLETED_STORAGE_KEY) === 'true';
   } catch {
     return false;
   }
@@ -82,14 +89,14 @@ function loadLocalTourCompleted() {
 
 function saveLocalTourCompleted() {
   try {
-    localStorage.setItem(TOUR_COMPLETED_STORAGE_KEY, 'true');
+    sessionStorage.setItem(TOUR_COMPLETED_STORAGE_KEY, 'true');
   } catch { /* noop */ }
 }
 
 function clearLocalTourState() {
   try {
-    localStorage.removeItem(TOUR_SEEN_STORAGE_KEY);
-    localStorage.removeItem(TOUR_COMPLETED_STORAGE_KEY);
+    sessionStorage.removeItem(TOUR_SEEN_STORAGE_KEY);
+    sessionStorage.removeItem(TOUR_COMPLETED_STORAGE_KEY);
   } catch { /* noop */ }
 }
 
@@ -131,20 +138,23 @@ export default function DashboardLayout() {
         // Guarda os dados no cache para enviar depois no PUT
         setPerfilCache(data);
 
-        // A coluna `tour_concluido` ainda pode não existir no backend.
-        // Se ela vier definida (true/false), o backend manda. Se vier
-        // ausente (undefined/null), usamos o que temos salvo localmente
-        // até o backend implementar essa flag.
-        if (data.tour_concluido === undefined || data.tour_concluido === null) {
-          setTourDone(loadLocalTourCompleted());
-        } else {
-          const concluido = Boolean(data.tour_concluido);
-          setTourDone(concluido);
-          if (concluido) {
-            // Backend já confirma como concluído: o estado local não é mais necessário
-            clearLocalTourState();
-          }
-        }
+        // TODO(tour_concluido backend): quando o backend implementar a
+        // coluna/flag `tour_concluido` em /profile, descomentar o bloco
+        // abaixo para passar a confiar nela. Por enquanto ela fica sempre
+        // desconsiderada (tratada como `false`) e o tour roda em toda
+        // sessão ativa, controlado só pelo sessionStorage local.
+        //
+        // if (data.tour_concluido === undefined || data.tour_concluido === null) {
+        //   setTourDone(loadLocalTourCompleted());
+        // } else {
+        //   const concluido = Boolean(data.tour_concluido);
+        //   setTourDone(concluido);
+        //   if (concluido) {
+        //     // Backend já confirma como concluído: o estado local não é mais necessário
+        //     clearLocalTourState();
+        //   }
+        // }
+        setTourDone(loadLocalTourCompleted());
       } catch (error) {
         console.error('Erro ao verificar status do tour:', error);
         // Se não conseguimos confirmar com o backend, usamos o que sabemos localmente
@@ -209,46 +219,50 @@ export default function DashboardLayout() {
       } catch { /* noop */ }
       saveLocalTourCompleted();
 
-      if (!cognitoSub) return;
-      try {
-        const session = await fetchAuthSession();
-        const token   = session.tokens.idToken.toString();
-
-        // Mantemos o corpo de acordo com o UsuarioBase para não dar erro 422.
-        // `tour_concluido` já vai junto: se a coluna ainda não existir no
-        // backend, o campo tende a ser ignorado; assim que existir, passa
-        // a ser persistido sem precisar mexer no frontend de novo.
-        const payloadAtualizado = {
-          email: perfilCache.email || '',
-          nome: perfilCache.nome || null,
-          estilo_preferido: perfilCache.estilo_preferido || null,
-          formato_preferido: perfilCache.formato_preferido || null,
-          objetivos_estudo: perfilCache.objetivos_estudo || null,
-          cognito_id: cognitoSub,
-          tour_concluido: true,
-        };
-
-        // A mágica: Apenas chamamos /profile. O backend faz o resto!
-        const res = await fetch(`${API_BASE}/profile`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'X-User-Id': cognitoSub,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payloadAtualizado),
-        });
-
-        if (!res.ok) {
-          const err = await res.text();
-          console.error('Falha ao salvar conclusão do tour:', res.status, err);
-        } else {
-          console.log('Tour concluído salvo com sucesso!');
-        }
-
-      } catch (error) {
-        console.error('Erro ao enviar requisição do tour:', error);
-      }
+      // TODO(tour_concluido backend): quando o backend implementar a
+      // coluna/flag `tour_concluido`, descomentar o bloco abaixo para
+      // persistir a conclusão do tour por lá via PUT /profile. Enquanto
+      // estiver comentado, a conclusão fica só no sessionStorage (ver
+      // saveLocalTourCompleted acima) e o tour volta a aparecer a cada
+      // novo login.
+      //
+      // if (!cognitoSub) return;
+      // try {
+      //   const session = await fetchAuthSession();
+      //   const token   = session.tokens.idToken.toString();
+      //
+      //   // Mantemos o corpo de acordo com o UsuarioBase para não dar erro 422.
+      //   const payloadAtualizado = {
+      //     email: perfilCache.email || '',
+      //     nome: perfilCache.nome || null,
+      //     estilo_preferido: perfilCache.estilo_preferido || null,
+      //     formato_preferido: perfilCache.formato_preferido || null,
+      //     objetivos_estudo: perfilCache.objetivos_estudo || null,
+      //     cognito_id: cognitoSub,
+      //     tour_concluido: true,
+      //   };
+      //
+      //   // A mágica: Apenas chamamos /profile. O backend faz o resto!
+      //   const res = await fetch(`${API_BASE}/profile`, {
+      //     method: 'PUT',
+      //     headers: {
+      //       'Authorization': `Bearer ${token}`,
+      //       'X-User-Id': cognitoSub,
+      //       'Content-Type': 'application/json',
+      //     },
+      //     body: JSON.stringify(payloadAtualizado),
+      //   });
+      //
+      //   if (!res.ok) {
+      //     const err = await res.text();
+      //     console.error('Falha ao salvar conclusão do tour:', res.status, err);
+      //   } else {
+      //     console.log('Tour concluído salvo com sucesso!');
+      //   }
+      //
+      // } catch (error) {
+      //   console.error('Erro ao enviar requisição do tour:', error);
+      // }
     }
   };
 
