@@ -83,7 +83,7 @@ export default function App() {
         <Route element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" />}>
           <Route path="/dashboard"   element={<OverviewPage />} />
           <Route path="/documents"   element={<DocumentsPage />} />
-          <Route path="/flashcards"  element={<FlashcardsQuizzesPage />} />
+          <Route path="/revisao-geral"  element={<FlashcardsQuizzesPage />} />
           <Route path="/profile"     element={<ProfilePage />} />
         </Route>
       </Routes>

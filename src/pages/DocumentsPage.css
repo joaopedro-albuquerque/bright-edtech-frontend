@@ -448,7 +448,9 @@
 }
 
 .dp-modal {
+  color-scheme: light;
   background: #ffffff;
+  color: #1f2937;
   border-radius: 16px;
   width: 100%;
   max-width: 420px;
@@ -700,6 +702,12 @@
   flex-wrap: wrap;
 }
 
+.dp-file-item__counts {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 /* ── Botão IA (estrela/sparkle) ── */
 .dp-file-item__ai-btn {
   display: inline-flex;
@@ -735,7 +743,13 @@
   white-space: nowrap;
   border: 1.5px solid;
   user-select: none;
+  margin: 0;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: filter 0.15s;
 }
+
+.dp-file-item__count:hover { filter: brightness(0.95); }
 
 .dp-file-item__count--resumos {
   color: #c53030;
@@ -819,7 +833,193 @@
   .dp-header__actions .dp-btn--primary { display: none; }
 }
 
+.dp-modal--summary {
+  max-width: 720px;
+  width: 92vw;
+}
+
+.dp-modal__summary--markdown {
+  max-height: 60vh;
+  overflow-y: auto;
+  line-height: 1.65;
+  font-size: 0.92rem;
+  color: #1f2937;
+  padding-right: 0.25rem;
+}
+
+.dp-modal__summary--markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1em;
+  font-size: 0.85rem;
+}
+
+.dp-modal__summary--markdown th,
+.dp-modal__summary--markdown td {
+  border: 1px solid rgba(10, 21, 53, 0.12);
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.dp-modal__summary--markdown th {
+  background: #16324f;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.dp-modal__summary--markdown tr:nth-child(even) td {
+  background: rgba(10, 21, 53, 0.02);
+}
+
+.dp-modal__summary--markdown hr {
+  border: none;
+  border-top: 1px solid rgba(10, 21, 53, 0.1);
+  margin: 1em 0;
+}
+
+.dp-modal__summary--markdown h1,
+.dp-modal__summary--markdown h2,
+.dp-modal__summary--markdown h3 {
+  margin: 1.1em 0 0.5em;
+  font-weight: 700;
+  color: #0a1535;
+}
+
+.dp-modal__summary--markdown h1 { font-size: 1.25rem; }
+.dp-modal__summary--markdown h2 { font-size: 1.1rem; }
+.dp-modal__summary--markdown h3 { font-size: 1rem; }
+
+.dp-modal__summary--markdown p { margin: 0 0 0.85em; }
+
+.dp-modal__summary--markdown ul,
+.dp-modal__summary--markdown ol {
+  margin: 0 0 0.85em;
+  padding-left: 1.4em;
+}
+
+.dp-modal__summary--markdown li { margin-bottom: 0.3em; }
+
+.dp-modal__summary--markdown strong { color: #0a1535; }
+
+.dp-modal__summary--markdown blockquote {
+  margin: 0 0 0.85em;
+  padding: 0.4rem 0.9rem;
+  border-left: 3px solid rgba(74, 144, 217, 0.4);
+  background: rgba(74, 144, 217, 0.05);
+  color: #4b5563;
+}
+
+.dp-modal__summary--markdown code {
+  background: rgba(10, 21, 53, 0.06);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
 @media (max-width: 480px) {
   .dp-grid { grid-template-columns: 1fr 1fr; }
   .dp-modal { border-radius: 12px; }
+}
+
+/* ── Modal: listagem de resumos/flashcards/quizzes por documento ── */
+.dp-modal--content-list {
+  max-width: 560px;
+}
+
+.dp-content-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.dp-content-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid rgba(10, 21, 53, 0.08);
+  border-radius: 10px;
+}
+
+.dp-content-list__info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.dp-content-list__title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--lp-text-dark, #0a1535);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dp-content-list__meta {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.75rem;
+  color: var(--lp-text-muted, #6b7280);
+}
+
+.dp-content-list__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+/* ── Seletor de formato (modal: Novo Resumo) ── */
+.dp-format-options {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.dp-format-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(10, 21, 53, 0.12);
+  background: none;
+  color: var(--lp-text-dark, #0a1535);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.dp-format-btn:hover:not(:disabled) { border-color: rgba(74, 144, 217, 0.4); }
+
+.dp-format-btn--selected {
+  border-color: #4a90d9;
+  background: rgba(74, 144, 217, 0.1);
+  color: #2c5282;
+  font-weight: 600;
+}
+
+.dp-format-description {
+  margin: 0.6rem 0 0;
+  font-size: 0.8rem;
+  color: var(--lp-text-muted, #6b7280);
+  line-height: 1.5;
+}
+
+/* ── Botão de download de PDF no modal de resumo ── */
+.dp-summary-download-btn {
+  margin-bottom: 0.75rem;
+}
+
+.dp-content-list__generate-btn {
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 0.9rem;
 }

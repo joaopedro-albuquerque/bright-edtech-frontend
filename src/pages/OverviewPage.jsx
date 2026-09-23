@@ -1,8 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { Link } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import QuickUploadModal from '../components/QuickUploadModal';
+import StudyModal from '../components/StudyModal';
+import Modal from '../components/Modal';
 import './OverviewPage.css';
 import { API_BASE } from '../config';
+import { RESUMO_FORMATOS } from '../constants/resumoFormatos';
 
 /* ─────────────────────────────────────────────
    ÍCONES SVG INLINE
@@ -54,6 +60,17 @@ const Icon = {
       <path d="M10 10V7a6 6 0 0 1 12 0v3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
     </svg>
   ),
+  plus: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M8 2v12M2 8h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  ),
+  eye: (
+    <svg width="15" height="15" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d="M1 9s2.8-5.5 8-5.5S17 9 17 9s-2.8 5.5-8 5.5S1 9 1 9Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+      <circle cx="9" cy="9" r="2.3" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  ),
 };
 
 /* ─────────────────────────────────────────────
@@ -94,8 +111,69 @@ function getGreeting() {
 export default function OverviewPage() {
   const [dashboardData, setDashboardData] = useState(null);
   const [userName,      setUserName]      = useState('Carregando...');
+  const [dbUserId,      setDbUserId]      = useState(null);
   const [isLoading,     setIsLoading]     = useState(true);
   const [error,         setError]         = useState(null);
+
+  // ── Atalho "gerar resumo" a partir dos documentos recentes ──
+  const [generatingDocId, setGeneratingDocId] = useState(null);
+  const [quickResumoMsg,  setQuickResumoMsg]  = useState(null); // { docId, type: 'success'|'error', text }
+
+  // ── Upload rápido ──
+  const [showQuickUpload, setShowQuickUpload] = useState(false);
+
+  // ── Abrir flashcard/quiz a partir da atividade recente ──
+  const [studyItem, setStudyItem] = useState(null); // { id, titulo, tipo }
+
+  // ── Visualização de resumo (mesmo padrão do Document Hub) ──
+  const [isOpeningResumoId,  setIsOpeningResumoId]  = useState(null);
+  const [showSummaryModal,   setShowSummaryModal]   = useState(false);
+  const [summaryText,        setSummaryText]        = useState('');
+  const [summaryFileName,    setSummaryFileName]    = useState('');
+  const [summaryResumoId,    setSummaryResumoId]    = useState(null);
+  const [isDownloadingPdf,   setIsDownloadingPdf]   = useState(false);
+
+  const handleViewResumo = async (item) => {
+    setIsOpeningResumoId(item.id);
+    try {
+      const { token } = await getAuthHeaders();
+      const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': dbUserId };
+      const res = await fetch(`${API_BASE}/resumos/${item.id}/conteudo`, { headers });
+      if (!res.ok) throw new Error(`Erro ${res.status} ao ler o resumo.`);
+      const data = await res.json();
+      setSummaryText(data.conteudo || 'Nenhum conteúdo de resumo.');
+      setSummaryFileName(item.titulo ?? 'Resumo');
+      setSummaryResumoId(item.id);
+      setShowSummaryModal(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsOpeningResumoId(null);
+    }
+  };
+
+  const closeSummaryModal = () => {
+    setShowSummaryModal(false);
+    setSummaryText('');
+    setSummaryFileName('');
+    setSummaryResumoId(null);
+  };
+
+  const downloadResumoPdf = async (resumoId) => {
+    setIsDownloadingPdf(true);
+    try {
+      const { token } = await getAuthHeaders();
+      const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': dbUserId };
+      const res = await fetch(`${API_BASE}/resumos/${resumoId}/download`, { headers });
+      if (!res.ok) throw new Error(`Erro ${res.status} ao gerar o PDF.`);
+      const data = await res.json();
+      if (data.url) window.open(data.url, '_blank');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
 
   /* ── Carrega o dashboard da API ── */
   const loadDashboard = useCallback(async () => {
@@ -111,10 +189,11 @@ export default function OverviewPage() {
       if (!resProf.ok) throw new Error(`Erro ${resProf.status}: não foi possível carregar o perfil.`);
       const profData = await resProf.json();
       setUserName(profData.nome?.split(' ')[0] || 'Aluno');
+      setDbUserId(profData.id);
 
       // 2. Usa o UUID do banco (profData.id) para chamar o dashboard
       const resDash = await fetch(`${API_BASE}/profile/${profData.id}/dashboard`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, 'X-User-Id': profData.id },
       });
       if (!resDash.ok) throw new Error(`Erro ${resDash.status}: não foi possível carregar o dashboard.`);
       const dashData = await resDash.json();
@@ -128,6 +207,38 @@ export default function OverviewPage() {
 
   useEffect(() => { loadDashboard(); }, [loadDashboard]);
 
+  /* ── Gera um resumo a partir do atalho rápido, formato escolhido pelo usuário ── */
+  const [quickResumoTarget, setQuickResumoTarget] = useState(null); // doc
+  const [quickResumoFormat, setQuickResumoFormat] = useState('cornell');
+
+  const handleQuickResumo = async (doc, formato) => {
+    setGeneratingDocId(doc.id);
+    setQuickResumoMsg(null);
+    setQuickResumoTarget(null);
+    try {
+      const { token } = await getAuthHeaders();
+      const res = await fetch(`${API_BASE}/documentos/${doc.id}/resumos`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'X-User-Id': dbUserId,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ nivel_conhecimento: 5, formato, tom: 'direto' }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.detail || `Erro ${res.status} ao gerar resumo.`);
+      }
+      setQuickResumoMsg({ docId: doc.id, type: 'success', text: 'Resumo gerado! Veja em Gestão de Documentos.' });
+      loadDashboard();
+    } catch (err) {
+      setQuickResumoMsg({ docId: doc.id, type: 'error', text: err.message });
+    } finally {
+      setGeneratingDocId(null);
+    }
+  };
+
   /* ─── Desestrutura os dados com fallbacks seguros ─── */
   const {
     total_flashcards = 0,
@@ -136,6 +247,7 @@ export default function OverviewPage() {
     ultimos_flashcards = [],
     ultimos_resumos    = [],
     ultimos_quizzes    = [],
+    documentos_recentes = [],
   } = dashboardData ?? {};
 
   const metrics = [
@@ -145,7 +257,7 @@ export default function OverviewPage() {
       value: total_flashcards,
       icon:  Icon.flashcard,
       color: 'blue',
-      to:    '/flashcards',
+      to:    '/revisao-geral',
     },
     {
       key:   'resumos',
@@ -161,7 +273,7 @@ export default function OverviewPage() {
       value: total_quizzes,
       icon:  Icon.quiz,
       color: 'violet',
-      to:    '/quizzes',
+      to:    '/revisao-geral?tab=quizzes',
     },
   ];
 
@@ -205,18 +317,33 @@ export default function OverviewPage() {
     <div className="ov-root">
 
       {/* ── Cabeçalho de boas-vindas ── */}
-      <header className="ov-header">
-        <div className="ov-header__greeting">
-          <span className="ov-header__sparkle">{Icon.sparkle}</span>
-          <span className="ov-header__time">{getGreeting()}</span>
+      <header className="ov-header tour-boas-vindas">
+        <div className="ov-header__top">
+          <div>
+            <div className="ov-header__greeting">
+              <span className="ov-header__sparkle">{Icon.sparkle}</span>
+              <span className="ov-header__time">{getGreeting()}</span>
+            </div>
+            <h1 className="ov-header__title">
+              {userName}
+            </h1>
+          </div>
+          <button className="ov-header__upload-btn" onClick={() => setShowQuickUpload(true)}>
+            {Icon.plus} Upload rápido
+          </button>
         </div>
-        <h1 className="ov-header__title">
-          {userName}
-        </h1>
         <p className="ov-header__sub">
-          Sua IA já processou os novos materiais. Por onde vamos começar hoje?
+          Aqui você acompanha os resumos, flashcards e quizzes gerados dos seus materiais. Já estudou hoje?
         </p>
       </header>
+
+      {showQuickUpload && dbUserId && (
+        <QuickUploadModal
+          dbUserId={dbUserId}
+          onClose={() => setShowQuickUpload(false)}
+          onUploaded={() => loadDashboard()}
+        />
+      )}
 
       {/* ── Métricas ── */}
       <section aria-label="Métricas gerais">
@@ -243,6 +370,39 @@ export default function OverviewPage() {
         </div>
       </section>
 
+      {/* ── Atalho: gerar resumo dos últimos documentos ── */}
+      {documentos_recentes.length > 0 && (
+        <section aria-label="Gerar resumo rápido">
+          <h2 className="ov-section-title">Gerar resumo rápido</h2>
+          <ul className="ov-quick-resumo-list" role="list">
+            {documentos_recentes.slice(0, 10).map((doc) => {
+              const isGenerating = generatingDocId === doc.id;
+              const msg = quickResumoMsg?.docId === doc.id ? quickResumoMsg : null;
+              return (
+                <li key={doc.id} className="ov-quick-resumo-item">
+                  <span className="ov-quick-resumo-item__name" title={doc.nome}>{doc.nome}</span>
+                  <span className="ov-quick-resumo-item__meta">
+                    {Icon.clock} {formatDate(doc.criado_em)}
+                  </span>
+                  {msg && (
+                    <span className={`ov-quick-resumo-item__msg ov-quick-resumo-item__msg--${msg.type}`}>
+                      {msg.text}
+                    </span>
+                  )}
+                  <button
+                    className="ov-quick-resumo-item__btn"
+                    onClick={() => { setQuickResumoTarget(doc); setQuickResumoFormat('cornell'); }}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating ? 'Gerando...' : 'Gerar resumo'}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
       {/* ── Atividade Recente ── */}
       <section aria-label="Atividade recente">
         <h2 className="ov-section-title">Atividade recente</h2>
@@ -254,7 +414,7 @@ export default function OverviewPage() {
             icon={Icon.flashcard}
             color="blue"
             ctaLabel="Ver todos"
-            ctaTo="/flashcards"
+            ctaTo="/revisao-geral"
             emptyLabel="Nenhum flashcard recente"
             emptyHint="Crie flashcards a partir dos seus documentos."
           >
@@ -264,6 +424,7 @@ export default function OverviewPage() {
                 title={item.titulo ?? item.pergunta ?? 'Flashcard'}
                 meta={formatDate(item.criado_em)}
                 icon={Icon.clock}
+                onClick={() => setStudyItem({ id: item.id, titulo: item.titulo ?? 'Flashcard', tipo: 'flashcard' })}
               />
             ))}
           </ActivityPanel>
@@ -282,8 +443,10 @@ export default function OverviewPage() {
               <ActivityItem
                 key={item.id}
                 title={item.titulo ?? item.nome ?? 'Resumo'}
-                meta={formatDate(item.criado_em)}
+                meta={isOpeningResumoId === item.id ? 'Abrindo...' : formatDate(item.criado_em)}
                 icon={Icon.clock}
+                onClick={() => handleViewResumo(item)}
+                disabled={isOpeningResumoId === item.id}
               />
             ))}
           </ActivityPanel>
@@ -294,7 +457,7 @@ export default function OverviewPage() {
             icon={Icon.quiz}
             color="violet"
             ctaLabel="Ver todos"
-            ctaTo="/flashcards"
+            ctaTo="/revisao-geral?tab=quizzes"
             emptyLabel="Nenhum quiz recente"
             emptyHint="Gere quizzes para testar seu conhecimento."
           >
@@ -304,12 +467,76 @@ export default function OverviewPage() {
                 title={item.titulo ?? item.nome ?? 'Quiz'}
                 meta={formatDate(item.criado_em)}
                 icon={Icon.clock}
+                onClick={() => setStudyItem({ id: item.id, titulo: item.titulo ?? 'Quiz', tipo: 'quiz' })}
               />
             ))}
           </ActivityPanel>
 
         </div>
       </section>
+
+      {studyItem && (
+        <StudyModal item={studyItem} tipo={studyItem.tipo} onClose={() => setStudyItem(null)} />
+      )}
+
+      {/* Modal: Resumo (mesmo padrão do Document Hub) */}
+      {showSummaryModal && (
+        <Modal
+          title={`Resumo: ${summaryFileName}`}
+          className="dp-modal--summary"
+          onClose={closeSummaryModal}
+          confirmLabel="Fechar"
+          confirmDisabled={false}
+          onConfirm={closeSummaryModal}
+        >
+          {summaryResumoId && (
+            <button
+              className="dp-btn dp-btn--ghost dp-summary-download-btn"
+              onClick={() => downloadResumoPdf(summaryResumoId)}
+              disabled={isDownloadingPdf}
+            >
+              {isDownloadingPdf ? 'Gerando PDF...' : 'Baixar PDF'}
+            </button>
+          )}
+          <div className="dp-modal__summary dp-modal__summary--markdown">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{summaryText}</ReactMarkdown>
+          </div>
+        </Modal>
+      )}
+
+      {/* ── Modal: escolher formato do resumo rápido ── */}
+      {quickResumoTarget && (
+        <div className="ov-overlay" role="dialog" aria-modal="true" onClick={() => setQuickResumoTarget(null)}>
+          <div className="ov-format-modal" onClick={e => e.stopPropagation()}>
+            <div className="ov-format-modal__header">
+              <h2 className="ov-format-modal__title">Novo Resumo</h2>
+              <button className="ov-format-modal__close" onClick={() => setQuickResumoTarget(null)} aria-label="Fechar">✕</button>
+            </div>
+            <p className="ov-format-modal__label">Formato do resumo</p>
+            <div className="ov-format-modal__options">
+              {RESUMO_FORMATOS.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`ov-format-btn${quickResumoFormat === opt.value ? ' ov-format-btn--selected' : ''}`}
+                  onClick={() => setQuickResumoFormat(opt.value)}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="ov-format-modal__description">
+              {RESUMO_FORMATOS.find(f => f.value === quickResumoFormat)?.description}
+            </p>
+            <div className="ov-format-modal__footer">
+              <button className="ov-format-modal__cancel" onClick={() => setQuickResumoTarget(null)}>Cancelar</button>
+              <button className="ov-format-modal__confirm" onClick={() => handleQuickResumo(quickResumoTarget, quickResumoFormat)}>
+                Gerar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
@@ -354,14 +581,22 @@ function ActivityPanel({ title, icon, color, ctaLabel, ctaTo,
 /* ─────────────────────────────────────────────
    SUB-COMPONENTE: item de atividade
 ───────────────────────────────────────────── */
-function ActivityItem({ title, meta, icon }) {
+function ActivityItem({ title, meta, icon, onClick, disabled = false }) {
   return (
     <li className="ov-activity-item">
-      <span className="ov-activity-item__title">{title}</span>
-      <span className="ov-activity-item__meta">
-        {icon}
-        {meta}
-      </span>
+      <button
+        type="button"
+        className="ov-activity-item__btn"
+        onClick={onClick}
+        disabled={disabled}
+      >
+        <span className="ov-activity-item__title">{title}</span>
+        <span className="ov-activity-item__meta">
+          {icon}
+          {meta}
+        </span>
+        <span className="ov-activity-item__eye" title="Visualizar">{Icon.eye}</span>
+      </button>
     </li>
   );
 }

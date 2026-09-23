@@ -1,7 +1,9 @@
 import Header from '../components/Header';
 import Hero from '../components/Hero';
 import Feature from '../components/Feature';
-import Pricing from '../components/Pricing';
+import Method from '../components/Method';
+import Team from '../components/Team';
+import TechStack from '../components/TechStack';
 import Metrics from '../components/Metrics';
 import Footer from '../components/Footer';
 import './LandingPage.css';
@@ -17,8 +19,14 @@ export default function LandingPage() {
         <section id="feature">
           <Feature />
         </section>
-        <section id="pricing">
-          <Pricing />
+        <section id="method">
+          <Method />
+        </section>
+        <section id="team">
+          <Team />
+        </section>
+        <section id="tech">
+          <TechStack />
         </section>
         <section id="metrics">
           <Metrics />
