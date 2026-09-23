@@ -702,6 +702,12 @@
   flex-wrap: wrap;
 }
 
+.dp-file-item__counts {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 /* ── Botão IA (estrela/sparkle) ── */
 .dp-file-item__ai-btn {
   display: inline-flex;

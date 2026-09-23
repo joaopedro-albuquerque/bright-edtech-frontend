@@ -250,6 +250,7 @@ export default function DocumentsPage() {
       if (filesData.length > 0 && dbUserId) {
         loadFileCounts(filesData, token, dbUserId);
       }
+      window.dispatchEvent(new CustomEvent('brightedtech:docs-tour-unlock'));
       return true;
     } catch (err) {
       setError(err.message);
@@ -314,6 +315,7 @@ export default function DocumentsPage() {
       setFolders((prev) => [nova, ...prev]);
       setShowNewFolderModal(false);
       setNewFolderName('');
+      window.dispatchEvent(new CustomEvent('brightedtech:docs-tour-unlock'));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -738,6 +740,7 @@ export default function DocumentsPage() {
       setUploadFolderId(null);
       setUploadFile(null);
       setUploadName('');
+      window.dispatchEvent(new CustomEvent('brightedtech:docs-tour-unlock'));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -772,10 +775,11 @@ export default function DocumentsPage() {
           </p>
         </div>
 
-        <div className="dp-header__actions">
+        <div className="dp-header__actions" data-tour="dp-header-actions">
           {currentFolderId && (
             <button
               className="dp-btn dp-btn--upload"
+              data-tour="dp-upload"
               onClick={() => setUploadFolderId(currentFolderId)}
             >
               {Icon.upload}
@@ -784,6 +788,7 @@ export default function DocumentsPage() {
           )}
           <button
             className="dp-btn dp-btn--primary"
+            data-tour="dp-new-folder"
             onClick={() => setShowNewFolderModal(true)}
           >
             {Icon.plus}
@@ -837,11 +842,15 @@ export default function DocumentsPage() {
 
       {/* ── Estado vazio ── */}
       {isEmpty && (
-        <div className="dp-empty">
+        <div className="dp-empty" data-tour="dp-empty">
           <div className="dp-empty__icon">{Icon.folder}</div>
           <p className="dp-empty__title">Nenhuma pasta por aqui</p>
           <p className="dp-empty__sub">Crie sua primeira pasta para organizar seus documentos.</p>
-          <button className="dp-btn dp-btn--primary" onClick={() => setShowNewFolderModal(true)}>
+          <button
+            className="dp-btn dp-btn--primary"
+            data-tour="dp-new-folder"
+            onClick={() => setShowNewFolderModal(true)}
+          >
             {Icon.plus} Criar pasta
           </button>
         </div>
@@ -851,7 +860,7 @@ export default function DocumentsPage() {
       {!isLoading && folders.length > 0 && (
         <section className="dp-section">
           {breadcrumb.length > 0 && <h2 className="dp-section__label">Pastas</h2>}
-          <div className="dp-grid">
+          <div className="dp-grid" data-tour="dp-folder-grid">
             {folders.map((folder, folderIndex) => (
               <div
                 key={folder.id}
@@ -928,11 +937,12 @@ export default function DocumentsPage() {
       {!isLoading && files.length > 0 && (
         <section className="dp-section">
           <h2 className="dp-section__label">Arquivos</h2>
-          <ul className="dp-file-list">
-            {files.map((file) => {
+          <ul className="dp-file-list" data-tour="dp-file-list">
+            {files.map((file, fileIndex) => {
               const isThisGenerating = isGenerating && generatingFileId === file.id;
               const counts = fileCounts[file.id];
               const displayName = file.nome_documento ?? file.nome;
+              const isFirstFile = fileIndex === 0;
               return (
                 <li
                   key={file.id}
@@ -953,6 +963,7 @@ export default function DocumentsPage() {
                     {/* Botão IA — gerar resumo */}
                     <button
                       className="dp-file-item__ai-btn"
+                      data-tour={isFirstFile ? 'dp-file-ai' : undefined}
                       onClick={() => { setNewSummaryTarget(file); setNewSummaryFormat('cornell'); }}
                       disabled={isGenerating}
                       title="Gerar novo resumo com IA"
@@ -961,27 +972,32 @@ export default function DocumentsPage() {
                     </button>
 
                     {/* Badges de contagem (clicáveis) */}
-                    <button
-                      type="button"
-                      className="dp-file-item__count dp-file-item__count--resumos"
-                      onClick={() => openContentModal(file, 'resumos')}
+                    <div
+                      className="dp-file-item__counts"
+                      data-tour={isFirstFile ? 'dp-file-counts' : undefined}
                     >
-                      {counts ? counts.resumos : '?'} Resumos
-                    </button>
-                    <button
-                      type="button"
-                      className="dp-file-item__count dp-file-item__count--flashcards"
-                      onClick={() => openContentModal(file, 'flashcards')}
-                    >
-                      {counts ? counts.flashcards : '?'} Flashcards
-                    </button>
-                    <button
-                      type="button"
-                      className="dp-file-item__count dp-file-item__count--quizzes"
-                      onClick={() => openContentModal(file, 'quizzes')}
-                    >
-                      {counts ? counts.quizzes : '?'} Quizzes
-                    </button>
+                      <button
+                        type="button"
+                        className="dp-file-item__count dp-file-item__count--resumos"
+                        onClick={() => openContentModal(file, 'resumos')}
+                      >
+                        {counts ? counts.resumos : '?'} Resumos
+                      </button>
+                      <button
+                        type="button"
+                        className="dp-file-item__count dp-file-item__count--flashcards"
+                        onClick={() => openContentModal(file, 'flashcards')}
+                      >
+                        {counts ? counts.flashcards : '?'} Flashcards
+                      </button>
+                      <button
+                        type="button"
+                        className="dp-file-item__count dp-file-item__count--quizzes"
+                        onClick={() => openContentModal(file, 'quizzes')}
+                      >
+                        {counts ? counts.quizzes : '?'} Quizzes
+                      </button>
+                    </div>
 
                     {/* Editar nome */}
                     <button

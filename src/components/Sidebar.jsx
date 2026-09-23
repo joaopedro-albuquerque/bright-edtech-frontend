@@ -115,6 +115,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
       try {
         sessionStorage.removeItem('brightedtech:tourSeenRoutes');
         sessionStorage.removeItem('brightedtech:tourCompletedLocally');
+        sessionStorage.removeItem('brightedtech:tourDocsChapters');
       } catch { /* noop */ }
 
       navigate('/login');

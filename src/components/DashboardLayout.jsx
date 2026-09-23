@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import './DashboardLayout.css';
@@ -23,6 +23,11 @@ const TOUR_SEEN_STORAGE_KEY = 'brightedtech:tourSeenRoutes';
 // também limpa essas chaves explicitamente para cobrir o caso de logout
 // sem fechar a aba/navegador.
 const TOUR_COMPLETED_STORAGE_KEY = 'brightedtech:tourCompletedLocally';
+const TOUR_DOCS_CHAPTERS_KEY = 'brightedtech:tourDocsChapters';
+const DOCS_TOUR_UNLOCK_EVENT = 'brightedtech:docs-tour-unlock';
+
+/** Capítulos progressivos de /documents (usuário novo desbloqueia ao criar). */
+const DOC_TOUR_CHAPTERS = ['create', 'folder', 'upload', 'file'];
 
 /** Quanto tempo esperar a página “pronta” antes de filtrar com o que houver. */
 const PAGE_READY_TIMEOUT_MS = 3000;
@@ -30,14 +35,72 @@ const PAGE_READY_TIMEOUT_MS = 3000;
 /** Seletor que indica que o conteúdo principal da rota já montou (pós-loading). */
 const PAGE_READY_SELECTOR = {
   '/dashboard': '.tour-boas-vindas, .ov-error',
-  // Pastas/vazio/arquivos — não só o header (senão o tour filtra cedo demais).
-  '/documents': '.dp-grid, .dp-empty, .dp-file-list',
+  '/documents': '.dp-grid, .dp-empty, .dp-file-list, [data-tour="dp-empty"], [data-tour="dp-header-actions"]',
   '/revisao-geral': '.fq-header__title',
   '/profile': '.pf-header__name',
 };
 
 function isTargetPresent(target) {
   return target === 'body' || Boolean(document.querySelector(target));
+}
+
+function getDocumentsChapterSteps(chapterId) {
+  switch (chapterId) {
+    case 'create':
+      return [
+        {
+          target: '[data-tour="dp-empty"]',
+          disableBeacon: true,
+          content: 'Sua área de documentos ainda está vazia. Crie a primeira pasta para começar a organizar seus materiais.',
+        },
+        {
+          target: '[data-tour="dp-new-folder"]',
+          disableBeacon: true,
+          content: 'Use Nova pasta (aqui ou no estado vazio) para criar sua primeira pasta de estudo.',
+        },
+      ];
+    case 'folder':
+      return [
+        {
+          target: '[data-tour="dp-folder-grid"]',
+          disableBeacon: true,
+          content: 'Suas pastas aparecem aqui. Use o menu (⋮) para renomear ou excluir.',
+        },
+        {
+          target: '[data-tour="dp-first-folder"]',
+          disableBeacon: true,
+          content: 'Clique na pasta para abrir e ver a trilha de navegação, o upload e os arquivos dentro dela.',
+        },
+      ];
+    case 'upload':
+      return [
+        {
+          target: '[data-tour="dp-upload"]',
+          disableBeacon: true,
+          content: 'Pasta aberta e ainda sem arquivos: envie um documento com Enviar arquivo para gerar resumos, flashcards e quizzes.',
+        },
+      ];
+    case 'file':
+      return [
+        {
+          target: '[data-tour="dp-file-list"]',
+          disableBeacon: true,
+          content: 'Os arquivos da pasta ficam listados aqui.',
+        },
+        {
+          target: '[data-tour="dp-file-ai"]',
+          disableBeacon: true,
+          content: 'Com o botão de IA você gera um novo resumo a partir deste documento.',
+        },
+        {
+          target: '[data-tour="dp-file-counts"]',
+          disableBeacon: true,
+          content: 'Aqui você vê quantos resumos, flashcards e quizzes já existem e abre cada lista com um clique.',
+        },
+      ];
+    default:
+      return [];
+  }
 }
 
 function getStepsForRoute(pathname) {
@@ -91,34 +154,6 @@ function getStepsForRoute(pathname) {
           content: 'Aqui você acessa o seu perfil e, quando quiser, encerra a sessão com o botão de sair.',
         },
       ];
-    case '/documents':
-      return [
-        {
-          target: '.dp-header__actions',
-          disableBeacon: true,
-          content: 'Aqui você cria pastas para organizar seus documentos e envia novos arquivos para gerar resumos, flashcards e quizzes.',
-        },
-        {
-          target: '.dp-grid',
-          disableBeacon: true,
-          content: 'Suas pastas aparecem aqui. Clique para abrir, ou use o menu de opções (⋮) para renomear ou excluir.',
-        },
-        {
-          target: '[data-tour="dp-first-folder"]',
-          disableBeacon: true,
-          content: 'Abra uma pasta para ver a trilha de navegação e os arquivos dentro dela. Vamos entrar nesta pasta no próximo passo.',
-        },
-        {
-          target: '.dp-breadcrumb',
-          disableBeacon: true,
-          content: 'Use a navegação de trilha para saber em qual pasta você está e voltar rapidamente para pastas anteriores.',
-        },
-        {
-          target: '.dp-file-list',
-          disableBeacon: true,
-          content: 'Os arquivos de cada pasta ficam listados aqui. Use o botão de IA para gerar um novo resumo, ou os contadores para ver resumos, flashcards e quizzes já criados a partir do documento.',
-        },
-      ];
     case '/revisao-geral':
       return [
         {
@@ -170,42 +205,6 @@ function filterAvailableSteps(steps) {
   return steps.filter((step) => isTargetPresent(step.target));
 }
 
-/**
- * Em /documents, se ainda estamos na raiz com pastas, mantém os passos que
- * só aparecem depois de abrir um diretório (breadcrumb / lista de arquivos)
- * e o destaque da primeira pasta — o efeito abre a pasta antes desses passos.
- */
-function buildTourStepsForRoute(pathname) {
-  const candidatos = getStepsForRoute(pathname);
-  if (pathname !== '/documents') {
-    return filterAvailableSteps(candidatos);
-  }
-
-  const hasFolders = Boolean(document.querySelector('.dp-card--folder'));
-  const insideFolder = Boolean(document.querySelector('.dp-breadcrumb'));
-
-  return candidatos.filter((step) => {
-    if (isTargetPresent(step.target)) return true;
-    if (!insideFolder && hasFolders) {
-      return (
-        step.target === '[data-tour="dp-first-folder"]'
-        || step.target === '.dp-breadcrumb'
-        || step.target === '.dp-file-list'
-      );
-    }
-    return false;
-  });
-}
-
-function openFirstDocumentsFolder() {
-  const btn =
-    document.querySelector('[data-tour="dp-first-folder"] .dp-card__body')
-    || document.querySelector('.dp-card--folder .dp-card__body');
-  if (!btn) return false;
-  btn.click();
-  return true;
-}
-
 function isPageReady(pathname) {
   const selector = PAGE_READY_SELECTOR[pathname];
   if (!selector) return true;
@@ -229,6 +228,67 @@ function saveSeenRoutes(routes) {
   }
 }
 
+function loadDocsChapters() {
+  try {
+    const raw = sessionStorage.getItem(TOUR_DOCS_CHAPTERS_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function saveDocsChapters(chapters) {
+  try {
+    sessionStorage.setItem(TOUR_DOCS_CHAPTERS_KEY, JSON.stringify([...chapters]));
+  } catch { /* noop */ }
+}
+
+function allDocsChaptersDone(chapters) {
+  return DOC_TOUR_CHAPTERS.every((id) => chapters.has(id));
+}
+
+/**
+ * Marca capítulos que já não fazem sentido (ex.: conta que já tem pastas
+ * não precisa do capítulo "create").
+ */
+function reconcileDocsChapters(done) {
+  const next = new Set(done);
+  const isEmptyRoot = Boolean(document.querySelector('[data-tour="dp-empty"]'));
+  const hasFolders = Boolean(document.querySelector('[data-tour="dp-folder-grid"]'));
+  const insideFolder = Boolean(document.querySelector('.dp-breadcrumb'));
+  const hasFiles = Boolean(document.querySelector('[data-tour="dp-file-list"]'));
+
+  if (!next.has('create') && !isEmptyRoot && (hasFolders || insideFolder || hasFiles)) {
+    next.add('create');
+  }
+  if (!next.has('folder') && insideFolder) {
+    next.add('folder');
+  }
+  if (!next.has('upload') && hasFiles) {
+    next.add('upload');
+  }
+  return next;
+}
+
+/**
+ * Escolhe o próximo capítulo de /documents desbloqueável pelo DOM atual.
+ * Retorna null se não há capítulo a mostrar agora.
+ */
+function resolveDocumentsChapter(doneChapters) {
+  const done = reconcileDocsChapters(doneChapters);
+  const isEmptyRoot = Boolean(document.querySelector('[data-tour="dp-empty"]'));
+  const hasFolders = Boolean(document.querySelector('[data-tour="dp-folder-grid"]'));
+  const insideFolder = Boolean(document.querySelector('.dp-breadcrumb'));
+  const hasFiles = Boolean(document.querySelector('[data-tour="dp-file-list"]'));
+  const hasUploadBtn = Boolean(document.querySelector('[data-tour="dp-upload"]'));
+
+  if (!done.has('create') && isEmptyRoot) return { id: 'create', done };
+  if (!done.has('folder') && hasFolders && !insideFolder) return { id: 'folder', done };
+  if (!done.has('upload') && insideFolder && !hasFiles && hasUploadBtn) return { id: 'upload', done };
+  if (!done.has('file') && hasFiles) return { id: 'file', done };
+  return { id: null, done };
+}
+
 function loadLocalTourCompleted() {
   try {
     return sessionStorage.getItem(TOUR_COMPLETED_STORAGE_KEY) === 'true';
@@ -247,6 +307,7 @@ function clearLocalTourState() {
   try {
     sessionStorage.removeItem(TOUR_SEEN_STORAGE_KEY);
     sessionStorage.removeItem(TOUR_COMPLETED_STORAGE_KEY);
+    sessionStorage.removeItem(TOUR_DOCS_CHAPTERS_KEY);
   } catch { /* noop */ }
 }
 
@@ -265,8 +326,13 @@ export default function DashboardLayout() {
   // avanço quando o elemento-alvo do próximo passo ainda não existe na
   // tela, e só mostrar o card quando ele for criado.
   const [stepIndex, setStepIndex] = useState(0);
+  const [docsChapters, setDocsChapters] = useState(loadDocsChapters);
+  const [activeDocsChapter, setActiveDocsChapter] = useState(null);
   const [cognitoSub, setCognitoSub] = useState(null);
   const [perfilCache, setPerfilCache] = useState({});
+  const docsChapterRef = useRef(null);
+  const docsChaptersRef = useRef(docsChapters);
+  docsChaptersRef.current = docsChapters;
 
   // 1. Busca os dados iniciais do usuário e verifica se o tour já foi concluído
   useEffect(() => {
@@ -325,6 +391,8 @@ export default function DashboardLayout() {
     setRunTour(false);
     setTourSteps([]);
     setStepIndex(0);
+    setActiveDocsChapter(null);
+    docsChapterRef.current = null;
     setSeenRoutes((prev) => {
       const rotasVistas = new Set(prev).add(location.pathname);
 
@@ -341,15 +409,126 @@ export default function DashboardLayout() {
     });
   }, [location.pathname]);
 
-  // 2. Espera a página ficar pronta, filtra passos pelos alvos presentes e
-  //    reinicia o índice. Assim contas vazias não travam em seletores que
-  //    nunca entram no DOM (ex.: .ov-quick-resumo-list sem documentos).
+  const documentsRouteComplete = allDocsChaptersDone(docsChapters)
+    || seenRoutes.has('/documents');
+
+  /** Inicia (ou reinicia) o capítulo de documentos desbloqueável agora. */
+  const tryStartDocumentsChapter = useCallback(() => {
+    if (tourDone || location.pathname !== '/documents') return;
+    if (allDocsChaptersDone(docsChaptersRef.current) || seenRoutes.has('/documents')) return;
+    if (docsChapterRef.current) return; // capítulo em andamento
+
+    const { id, done } = resolveDocumentsChapter(docsChaptersRef.current);
+    if (done.size !== docsChaptersRef.current.size) {
+      docsChaptersRef.current = done;
+      setDocsChapters(done);
+      saveDocsChapters(done);
+      if (allDocsChaptersDone(done)) {
+        finalizarTourDaRota();
+        return;
+      }
+    }
+    if (!id) {
+      setRunTour(false);
+      setTourSteps([]);
+      setStepIndex(0);
+      return;
+    }
+
+    const steps = filterAvailableSteps(getDocumentsChapterSteps(id));
+    if (steps.length === 0) return;
+
+    docsChapterRef.current = id;
+    setActiveDocsChapter(id);
+    setTourSteps(steps);
+    setStepIndex(0);
+  }, [tourDone, location.pathname, seenRoutes, finalizarTourDaRota]);
+
+  const finalizarCapituloDocumentos = useCallback(() => {
+    const chapterId = docsChapterRef.current || activeDocsChapter;
+    setRunTour(false);
+    setTourSteps([]);
+    setStepIndex(0);
+    docsChapterRef.current = null;
+    setActiveDocsChapter(null);
+
+    if (!chapterId) return;
+
+    setDocsChapters((prev) => {
+      const next = new Set(prev).add(chapterId);
+      docsChaptersRef.current = next;
+      saveDocsChapters(next);
+      if (allDocsChaptersDone(next)) {
+        queueMicrotask(() => finalizarTourDaRota());
+      } else {
+        // Se o DOM já desbloqueou o próximo (ex.: pasta criada durante o capítulo), inicia já.
+        queueMicrotask(() => tryStartDocumentsChapter());
+      }
+      return next;
+    });
+  }, [activeDocsChapter, finalizarTourDaRota, tryStartDocumentsChapter]);
+
+  // 2. Espera a página ficar pronta e monta os passos (ou o capítulo de docs).
   useEffect(() => {
     setRunTour(false);
     setTourSteps([]);
     setStepIndex(0);
+    docsChapterRef.current = null;
+    setActiveDocsChapter(null);
 
-    if (tourDone || seenRoutes.has(location.pathname)) {
+    if (tourDone) return undefined;
+
+    if (location.pathname === '/documents') {
+      if (documentsRouteComplete) return undefined;
+
+      let cancelled = false;
+      let observer = null;
+      let readyTimer = null;
+      let safetyTimer = null;
+
+      const aplicar = () => {
+        if (cancelled) return;
+        tryStartDocumentsChapter();
+      };
+
+      const tentarSePronto = () => {
+        if (!isPageReady('/documents')) return false;
+        if (observer) {
+          observer.disconnect();
+          observer = null;
+        }
+        if (safetyTimer) {
+          clearTimeout(safetyTimer);
+          safetyTimer = null;
+        }
+        readyTimer = setTimeout(aplicar, 80);
+        return true;
+      };
+
+      if (!tentarSePronto()) {
+        observer = new MutationObserver(() => {
+          tentarSePronto();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+        safetyTimer = setTimeout(() => {
+          if (cancelled) return;
+          if (observer) {
+            observer.disconnect();
+            observer = null;
+          }
+          aplicar();
+        }, PAGE_READY_TIMEOUT_MS);
+      }
+
+      return () => {
+        cancelled = true;
+        if (observer) observer.disconnect();
+        if (readyTimer) clearTimeout(readyTimer);
+        if (safetyTimer) clearTimeout(safetyTimer);
+      };
+    }
+
+    if (seenRoutes.has(location.pathname)) {
       return undefined;
     }
 
@@ -365,9 +544,8 @@ export default function DashboardLayout() {
 
     const aplicarPassosFiltrados = () => {
       if (cancelled) return;
-      const filtrados = buildTourStepsForRoute(location.pathname);
+      const filtrados = filterAvailableSteps(candidatos);
       if (filtrados.length === 0) {
-        // Nada utilizável nesta rota — marca como vista para não ficar presa.
         finalizarTourDaRota();
         return;
       }
@@ -385,7 +563,6 @@ export default function DashboardLayout() {
         clearTimeout(safetyTimer);
         safetyTimer = null;
       }
-      // Pequena pausa para o layout assentar antes de medir os alvos.
       readyTimer = setTimeout(aplicarPassosFiltrados, 80);
       return true;
     };
@@ -412,60 +589,61 @@ export default function DashboardLayout() {
       if (readyTimer) clearTimeout(readyTimer);
       if (safetyTimer) clearTimeout(safetyTimer);
     };
-  }, [tourDone, location.pathname, seenRoutes, finalizarTourDaRota]);
+  }, [
+    tourDone,
+    location.pathname,
+    seenRoutes,
+    documentsRouteComplete,
+    finalizarTourDaRota,
+    tryStartDocumentsChapter,
+  ]);
 
-  // 4. Exibe o passo atual. Entre passos fazemos um microciclo run=false →
-  //    remedir → run=true para o spotlight nascer no bounding box certo
-  //    (evita herdar o tamanho do .sidebar__nav no passo do perfil).
+  // Escuta unlocks da DocumentsPage (criar pasta / abrir / upload).
   useEffect(() => {
-    if (tourDone || tourSteps.length === 0 || seenRoutes.has(location.pathname)) {
+    if (tourDone || location.pathname !== '/documents' || documentsRouteComplete) {
+      return undefined;
+    }
+
+    const onUnlock = () => {
+      // Só inicia novo capítulo se não houver um em andamento.
+      if (docsChapterRef.current) return;
+      // Pequeno delay para o React pintar o DOM (grade, upload, lista).
+      setTimeout(() => tryStartDocumentsChapter(), 120);
+    };
+
+    window.addEventListener(DOCS_TOUR_UNLOCK_EVENT, onUnlock);
+    return () => window.removeEventListener(DOCS_TOUR_UNLOCK_EVENT, onUnlock);
+  }, [tourDone, location.pathname, documentsRouteComplete, tryStartDocumentsChapter]);
+
+  // 4. Exibe o passo atual. Microciclo run=false → remedir → run=true.
+  useEffect(() => {
+    if (tourDone || tourSteps.length === 0) {
+      setRunTour(false);
+      return undefined;
+    }
+
+    if (location.pathname !== '/documents' && seenRoutes.has(location.pathname)) {
       setRunTour(false);
       return undefined;
     }
 
     if (stepIndex >= tourSteps.length) {
-      finalizarTourDaRota();
+      if (location.pathname === '/documents') {
+        finalizarCapituloDocumentos();
+      } else {
+        finalizarTourDaRota();
+      }
       return undefined;
     }
 
     const step = tourSteps[stepIndex];
     if (!isTargetPresent(step.target)) {
-      // Em documentos: se o alvo só existe dentro de uma pasta, abrimos a
-      // primeira pasta e esperamos o DOM — em vez de pular/encerrar o tour.
-      const precisaAbrirPasta =
-        location.pathname === '/documents'
-        && (step.target === '.dp-breadcrumb' || step.target === '.dp-file-list');
-
-      if (precisaAbrirPasta && openFirstDocumentsFolder()) {
-        setRunTour(false);
-        const observer = new MutationObserver(() => {
-          if (isTargetPresent(step.target)) {
-            observer.disconnect();
-            setRunTour(true);
-          }
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
-        const timeout = setTimeout(() => {
-          observer.disconnect();
-          // Pasta vazia sem o alvo (ex.: sem arquivos) — pula só este passo.
-          setStepIndex((i) => i + 1);
-        }, PAGE_READY_TIMEOUT_MS);
-        return () => {
-          observer.disconnect();
-          clearTimeout(timeout);
-        };
-      }
-
-      // Alvo sumiu e não dá para revelar — pula para o próximo.
       setRunTour(false);
       setStepIndex((i) => i + 1);
       return undefined;
     }
 
     setRunTour(false);
-    // Passo 0: espera a página assentar. Passos da sidebar (fixed): delay
-    // maior para o Joyride remedir o bounding box (evita spotlight herdado
-    // do .sidebar__nav no passo do perfil). Demais passos: microciclo curto.
     const isSidebarStep = typeof step.target === 'string'
       && (step.target.includes('sidebar') || step.target.includes('data-tour="sidebar'));
     const delay = stepIndex === 0 ? 500 : (isSidebarStep ? 180 : 80);
@@ -484,47 +662,43 @@ export default function DashboardLayout() {
       if (raf1) cancelAnimationFrame(raf1);
       if (raf2) cancelAnimationFrame(raf2);
     };
-  }, [tourDone, tourSteps, stepIndex, location.pathname, seenRoutes, finalizarTourDaRota]);
+  }, [
+    tourDone,
+    tourSteps,
+    stepIndex,
+    location.pathname,
+    seenRoutes,
+    finalizarTourDaRota,
+    finalizarCapituloDocumentos,
+  ]);
 
-  // 5. Persiste localmente quais rotas já tiveram o tour visto/pulado
+  // 5. Persiste rotas vistas
   useEffect(() => {
     saveSeenRoutes(seenRoutes);
   }, [seenRoutes]);
 
-  // 6. Callback do Joyride: avança/volta o nosso índice controlado e trata
-  //    a conclusão/pulo do tour.
+  // 6. Callback do Joyride
   const handleJoyrideCallback = async (data) => {
     const { status, type, action, index } = data;
 
     if (type === EVENTS.STEP_AFTER) {
-      // Avança ou volta o passo. O efeito acima cuida de remedir o próximo alvo.
       setRunTour(false);
-      const nextIndex = index + (action === ACTIONS.PREV ? -1 : 1);
-      const nextStep = tourSteps[nextIndex];
-      // Ao avançar para breadcrumb/arquivos, abre a primeira pasta antes
-      // do próximo card (tour de documentos continua dentro do diretório).
-      if (
-        action === ACTIONS.NEXT
-        && location.pathname === '/documents'
-        && nextStep
-        && !isTargetPresent(nextStep.target)
-        && (nextStep.target === '.dp-breadcrumb' || nextStep.target === '.dp-file-list')
-      ) {
-        openFirstDocumentsFolder();
-      }
-      setStepIndex(nextIndex);
+      setStepIndex(index + (action === ACTIONS.PREV ? -1 : 1));
       return;
     }
 
     if (type === EVENTS.TARGET_NOT_FOUND) {
-      // Pula o passo quebrado em vez de travar o tour.
       setRunTour(false);
       setStepIndex((i) => i + 1);
       return;
     }
 
     if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
-      finalizarTourDaRota();
+      if (location.pathname === '/documents') {
+        finalizarCapituloDocumentos();
+      } else {
+        finalizarTourDaRota();
+      }
 
       // TODO(tour_concluido backend): quando o backend implementar a
       // coluna/flag `tour_concluido`, descomentar o bloco abaixo para
@@ -538,7 +712,6 @@ export default function DashboardLayout() {
       //   const session = await fetchAuthSession();
       //   const token   = session.tokens.idToken.toString();
       //
-      //   // Mantemos o corpo de acordo com o UsuarioBase para não dar erro 422.
       //   const payloadAtualizado = {
       //     email: perfilCache.email || '',
       //     nome: perfilCache.nome || null,
@@ -549,7 +722,6 @@ export default function DashboardLayout() {
       //     tour_concluido: true,
       //   };
       //
-      //   // A mágica: Apenas chamamos /profile. O backend faz o resto!
       //   const res = await fetch(`${API_BASE}/profile`, {
       //     method: 'PUT',
       //     headers: {
@@ -563,10 +735,7 @@ export default function DashboardLayout() {
       //   if (!res.ok) {
       //     const err = await res.text();
       //     console.error('Falha ao salvar conclusão do tour:', res.status, err);
-      //   } else {
-      //     console.log('Tour concluído salvo com sucesso!');
       //   }
-      //
       // } catch (error) {
       //   console.error('Erro ao enviar requisição do tour:', error);
       // }
