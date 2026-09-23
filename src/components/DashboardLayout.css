@@ -85,6 +85,17 @@
   box-shadow: 0 0 0 4px rgba(74, 144, 217, 0.25), 0 6px 24px rgba(10, 21, 53, 0.35) !important;
 }
 
+/* O card do tour já nasce posicionado em cima da área destacada e só
+   aparece com um fade-in simples, sem deslizar de outro lugar da tela. */
+.react-joyride__tooltip {
+  animation: tourTooltipFadeIn 0.28s ease both;
+}
+
+@keyframes tourTooltipFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 /* ── Overlay mobile ── */
 .dl-overlay {
   position: fixed;

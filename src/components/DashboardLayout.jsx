@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import './DashboardLayout.css';
 
-import Joyride, { STATUS, EVENTS } from 'react-joyride';
+import Joyride, { STATUS, EVENTS, ACTIONS } from 'react-joyride';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { API_BASE } from '../config';
 
@@ -182,6 +182,11 @@ export default function DashboardLayout() {
   const [seenRoutes, setSeenRoutes] = useState(loadSeenRoutes);
   const [runTour, setRunTour] = useState(false);
   const [tourSteps, setTourSteps] = useState([]);
+  // Índice do passo atual. O tour agora é controlado por nós (em vez de
+  // deixado 100% a cargo do Joyride) justamente para poder "segurar" o
+  // avanço quando o elemento-alvo do próximo passo ainda não existe na
+  // tela, e só mostrar o card quando ele for criado.
+  const [stepIndex, setStepIndex] = useState(0);
   const [cognitoSub, setCognitoSub] = useState(null);
   const [perfilCache, setPerfilCache] = useState({});
 
@@ -236,23 +241,76 @@ export default function DashboardLayout() {
     carregarStatusTour();
   }, []);
 
-  // 2. Define os passos do tour para a rota atual
+  // 2. Define os passos do tour para a rota atual e reinicia o índice
   useEffect(() => {
     setTourSteps(getStepsForRoute(location.pathname));
+    setStepIndex(0);
   }, [location.pathname]);
 
-  // 3. Decide se o tour deve rodar: só roda em rotas com passos definidos,
-  //    que ainda não foram vistas nesta "sessão" de onboarding.
+  // 3. Marca a rota atual como concluída e, se todas as rotas do tour já
+  //    tiverem sido vistas, marca o tour inteiro como concluído.
+  const finalizarTourDaRota = useCallback(() => {
+    setRunTour(false);
+    setSeenRoutes((prev) => {
+      const rotasVistas = new Set(prev).add(location.pathname);
+
+      const faltaAlgumaRota = TOUR_ROUTES.some((rota) => !rotasVistas.has(rota));
+      if (!faltaAlgumaRota) {
+        setTourDone(true);
+        try {
+          localStorage.removeItem(TOUR_SEEN_STORAGE_KEY);
+        } catch { /* noop */ }
+        saveLocalTourCompleted();
+      }
+
+      return rotasVistas;
+    });
+  }, [location.pathname]);
+
+  // 4. Decide se o tour deve rodar. Diferente de antes, aqui NÃO pulamos um
+  //    passo só porque o elemento-alvo ainda não existe na tela (ex: página
+  //    ainda carregando os dados). Em vez disso, escondemos o tour e ficamos
+  //    observando o DOM; assim que o elemento for criado, o card aparece
+  //    nele — sem pular etapas e sem travar o onboarding.
   useEffect(() => {
     if (tourDone || tourSteps.length === 0 || seenRoutes.has(location.pathname)) {
       setRunTour(false);
       return;
     }
-    const timer = setTimeout(() => setRunTour(true), 500);
-    return () => clearTimeout(timer);
-  }, [tourDone, tourSteps, location.pathname, seenRoutes]);
 
-  // 4. Persiste localmente quais rotas já tiveram o tour visto/pulado
+    // Já passamos por todos os passos definidos para esta rota.
+    if (stepIndex >= tourSteps.length) {
+      finalizarTourDaRota();
+      return;
+    }
+
+    const step = tourSteps[stepIndex];
+    const alvoExiste = step.target === 'body' || Boolean(document.querySelector(step.target));
+
+    if (alvoExiste) {
+      // Pequena pausa só no primeiro passo, pra deixar a página assentar
+      // antes do overlay aparecer.
+      const delay = stepIndex === 0 ? 500 : 0;
+      const timer = setTimeout(() => setRunTour(true), delay);
+      return () => clearTimeout(timer);
+    }
+
+    // Elemento ainda não existe: escondemos o tour e esperamos, na própria
+    // sessão, ele ser criado (ex: dado terminando de carregar). Assim que
+    // aparecer no DOM, o Joyride mostra o card sobre ele.
+    setRunTour(false);
+    const observer = new MutationObserver(() => {
+      if (document.querySelector(step.target)) {
+        observer.disconnect();
+        setRunTour(true);
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, [tourDone, tourSteps, stepIndex, location.pathname, seenRoutes, finalizarTourDaRota]);
+
+  // 5. Persiste localmente quais rotas já tiveram o tour visto/pulado
   useEffect(() => {
     try {
       localStorage.setItem(TOUR_SEEN_STORAGE_KEY, JSON.stringify([...seenRoutes]));
@@ -261,35 +319,28 @@ export default function DashboardLayout() {
     }
   }, [seenRoutes]);
 
-  // 5. Callback do Joyride: trata alvo não encontrado e conclusão/pulo do tour
+  // 6. Callback do Joyride: avança/volta o nosso índice controlado e trata
+  //    a conclusão/pulo do tour.
   const handleJoyrideCallback = async (data) => {
-    const { status, type } = data;
+    const { status, type, action, index } = data;
+
+    if (type === EVENTS.STEP_AFTER) {
+      // Avança ou volta o passo. O efeito acima cuida de esperar o próximo
+      // alvo existir antes de exibir o card.
+      setStepIndex(index + (action === ACTIONS.PREV ? -1 : 1));
+      return;
+    }
 
     if (type === EVENTS.TARGET_NOT_FOUND) {
-      // Elemento ainda não montado (ex: página em loading) — não trava o tour,
-      // o Joyride já pula automaticamente para o próximo passo.
-      console.warn('[Tour] Elemento não encontrado para o passo:', data.step?.target);
+      // Segurança extra: como já checamos a existência do alvo antes de
+      // rodar o tour, isso não deveria disparar. Se disparar mesmo assim,
+      // apenas escondemos e deixamos o efeito de espera assumir de novo.
+      setRunTour(false);
       return;
     }
 
     if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
-      setRunTour(false);
-
-      const rotasVistas = new Set(seenRoutes).add(location.pathname);
-      setSeenRoutes(rotasVistas);
-
-      const faltaAlgumaRota = TOUR_ROUTES.some((rota) => !rotasVistas.has(rota));
-      if (faltaAlgumaRota) return; // ainda há páginas com tour pendente
-
-      // Usuário já viu (ou pulou) o tour em todas as páginas: marca como concluído
-      setTourDone(true);
-      // Grava localmente já de cara — funciona mesmo que o backend ainda não
-      // tenha a coluna `tour_concluido`, e não precisa de mudança nenhuma aqui
-      // quando ela for implementada (o passo 1 passa a confiar no backend).
-      try {
-        localStorage.removeItem(TOUR_SEEN_STORAGE_KEY);
-      } catch { /* noop */ }
-      saveLocalTourCompleted();
+      finalizarTourDaRota();
 
       // TODO(tour_concluido backend): quando o backend implementar a
       // coluna/flag `tour_concluido`, descomentar o bloco abaixo para
@@ -342,20 +393,20 @@ export default function DashboardLayout() {
     <div className={`dl-root${collapsed ? ' dl-root--collapsed' : ''}`}>
       <Joyride
         steps={tourSteps}
+        stepIndex={stepIndex}
         run={runTour && tourSteps.length > 0}
         continuous={true}
         showSkipButton={true}
-        showProgress={true}
+        showProgress={false}
         disableOverlayClose={true}
         scrollToFirstStep={true}
         callback={handleJoyrideCallback}
         floaterProps={{
-          disableAnimation: false,
-          styles: {
-            floater: {
-              transition: 'opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
-            },
-          },
+          // Desliga a animação padrão do react-floater (que desliza/transforma
+          // o card de uma posição pra outra). O card já nasce posicionado em
+          // cima da área destacada e só faz um fade-in (ver .react-joyride__tooltip
+          // em DashboardLayout.css).
+          disableAnimation: true,
         }}
         locale={{
           back: 'Voltar',
@@ -363,7 +414,6 @@ export default function DashboardLayout() {
           last: 'Concluir',
           next: 'Próximo',
           skip: 'Pular',
-          nextLabelWithProgress: 'Próximo (Passo {step} de {steps})',
         }}
         styles={{
           options: {
@@ -376,7 +426,11 @@ export default function DashboardLayout() {
           },
           spotlight: {
             borderRadius: '10px',
-            transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+            // Sem transição de posição/tamanho: o recorte já nasce certo em
+            // cima do elemento de cada passo, sem "arrastar" de um lugar pro
+            // outro (era isso que deixava o passo do perfil com o recorte
+            // errado, herdando por um instante o tamanho do passo anterior).
+            transition: 'none',
           },
           overlay: {
             transition: 'opacity 0.3s ease',
