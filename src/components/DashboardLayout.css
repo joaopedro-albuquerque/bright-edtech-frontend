@@ -66,6 +66,25 @@
   color: #ffffff;
 }
 
+/* ── Tour guiado (react-joyride) ── */
+.react-joyride__overlay {
+  backdrop-filter: blur(1.5px);
+}
+
+.react-joyride__tooltip [data-action="primary"]:hover {
+  background-color: #3f7fc1 !important;
+  transform: translateY(-1px);
+}
+
+.react-joyride__tooltip [data-action="back"]:hover,
+.react-joyride__tooltip [data-action="skip"]:hover {
+  color: #0a1535 !important;
+}
+
+.react-joyride__spotlight {
+  box-shadow: 0 0 0 4px rgba(74, 144, 217, 0.25), 0 6px 24px rgba(10, 21, 53, 0.35) !important;
+}
+
 /* ── Overlay mobile ── */
 .dl-overlay {
   position: fixed;

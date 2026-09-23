@@ -10,7 +10,7 @@ import { API_BASE } from '../config';
 // Rotas que têm um passo de tour próprio. O tour só é marcado como
 // concluído no backend depois que o usuário já viu (ou pulou) o mini-tour
 // de todas elas — assim cada página chega a mostrar sua dica pelo menos uma vez.
-const TOUR_ROUTES = ['/dashboard', '/documents', '/profile'];
+const TOUR_ROUTES = ['/dashboard', '/documents', '/revisao-geral', '/profile'];
 const TOUR_SEEN_STORAGE_KEY = 'brightedtech:tourSeenRoutes';
 // Fallback local enquanto o backend não tem a coluna/flag `tour_concluido`.
 // Assim que o backend passar a devolver esse campo, ele manda; até lá,
@@ -40,6 +40,14 @@ function getStepsForRoute(pathname) {
           target: '.dp-header__actions',
           disableBeacon: true,
           content: 'Aqui você cria pastas para organizar seus documentos e envia novos arquivos para gerar resumos, flashcards e quizzes.',
+        },
+      ];
+    case '/revisao-geral':
+      return [
+        {
+          target: '.fq-header__title',
+          disableBeacon: true,
+          content: 'Aqui ficam todos os seus flashcards e quizzes gerados, prontos para revisão.',
         },
       ];
     case '/profile':
@@ -255,6 +263,14 @@ export default function DashboardLayout() {
         disableOverlayClose={true}
         scrollToFirstStep={true}
         callback={handleJoyrideCallback}
+        floaterProps={{
+          disableAnimation: false,
+          styles: {
+            floater: {
+              transition: 'opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+            },
+          },
+        }}
         locale={{
           back: 'Voltar',
           close: 'Fechar',
@@ -263,7 +279,69 @@ export default function DashboardLayout() {
           skip: 'Pular',
           nextLabelWithProgress: 'Próximo (Passo {step} de {steps})',
         }}
-        styles={{ options: { primaryColor: '#556b2f', zIndex: 10000 } }}
+        styles={{
+          options: {
+            primaryColor: '#4A90D9',
+            textColor: '#0a1535',
+            arrowColor: '#ffffff',
+            backgroundColor: '#ffffff',
+            overlayColor: 'rgba(7, 13, 72, 0.55)',
+            zIndex: 10000,
+          },
+          spotlight: {
+            borderRadius: '10px',
+            transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+          },
+          overlay: {
+            transition: 'opacity 0.3s ease',
+          },
+          tooltip: {
+            borderRadius: '14px',
+            padding: '20px',
+            fontFamily: "'DM Sans', sans-serif",
+            boxShadow: '0 6px 24px rgba(10, 21, 53, 0.16)',
+          },
+          tooltipTitle: {
+            fontFamily: "'Syne', sans-serif",
+            fontSize: '1.05rem',
+            fontWeight: 700,
+            color: '#0a1535',
+            marginBottom: '4px',
+          },
+          tooltipContent: {
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: '0.92rem',
+            color: '#4a5568',
+            lineHeight: 1.55,
+            padding: '8px 0',
+          },
+          buttonNext: {
+            backgroundColor: '#4A90D9',
+            color: '#ffffff',
+            fontFamily: "'DM Sans', sans-serif",
+            fontWeight: 600,
+            fontSize: '0.88rem',
+            borderRadius: '8px',
+            padding: '9px 16px',
+            outline: 'none',
+            transition: 'background-color 0.18s ease, transform 0.18s ease',
+          },
+          buttonBack: {
+            color: '#6b7280',
+            fontFamily: "'DM Sans', sans-serif",
+            fontWeight: 600,
+            fontSize: '0.88rem',
+            marginRight: '8px',
+          },
+          buttonSkip: {
+            color: '#6b7280',
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: '0.85rem',
+          },
+          buttonClose: {
+            color: '#6b7280',
+          },
+        }}
       />
       {mobileOpen && <div className="dl-overlay" onClick={() => setMobileOpen(false)} aria-hidden="true" />}
       <Sidebar
