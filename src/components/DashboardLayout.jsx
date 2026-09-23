@@ -20,26 +20,32 @@ export default function DashboardLayout() {
   const location = useLocation();
   const [runTour, setRunTour] = useState(false);
   const [tourSteps, setTourSteps] = useState([]);
-  const [userId, setUserId] = useState(null);
+  const [cognitoSub, setCognitoSub] = useState(null);
+  const [dbUserId, setDbUserId] = useState(null); // ID interno do banco de dados
 
-  // 2. Busca no banco de dados se o usuário já fez o tour usando GET /profile
+  // 2. Busca o perfil e guarda o ID interno do banco
   useEffect(() => {
     async function carregarStatusTour() {
       try {
         const session = await fetchAuthSession();
         const token   = session.tokens.idToken.toString();
         const uid     = session.tokens.idToken.payload.sub;
-        setUserId(uid);
+        setCognitoSub(uid);
 
         const res = await fetch(`${API_BASE}/profile`, {
           headers: { 
             'Authorization': `Bearer ${token}`,
-            'X-User-Id': uid // Cabeçalho obrigatório exigido pelo backend
+            'X-User-Id': uid 
           },
         });
         
         if (!res.ok) return;
         const data = await res.json();
+
+        // Armazena o ID interno retornado pelo banco (ajuste a propriedade se o nome for id, id_usuario, etc.)
+        if (data.id || data.user_id) {
+          setDbUserId(data.id || data.user_id);
+        }
 
         // Ativa o tour se a coluna for falsa ou inexistente
         if (!data.tour_concluido) {
@@ -86,44 +92,26 @@ export default function DashboardLayout() {
     }
   }, [location.pathname]);
 
-  // 4. Salva no banco de dados quando o usuário pula ou finaliza usando PUT /profile
+  // 4. Salva no banco de dados usando o ID interno correto do banco na URL do PUT
   const handleJoyrideCallback = async (data) => {
     const { status } = data;
 
     if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
       setRunTour(false);
 
-      if (userId) {
+      if (cognitoSub && dbUserId) {
         try {
           const session = await fetchAuthSession();
           const token   = session.tokens.idToken.toString();
-          const uid     = session.tokens.idToken.payload.sub;
 
-          // 1. Primeiro, buscamos os dados atuais do perfil para não sobrescrever campos com nulos/vazios
-          const getRes = await fetch(`${API_BASE}/profile`, {
-            headers: { 
-              'Authorization': `Bearer ${token}`,
-              'X-User-Id': uid 
-            },
-          });
-          
-          let perfilAtual = {};
-          if (getRes.ok) {
-            perfilAtual = await getRes.json();
-          }
-
-          // 2. Enviamos o objeto completo atualizado com o tour concluído
-          await fetch(`${API_BASE}/profile/${uid}`, { // Ou `${API_BASE}/profile/${uid}` se a sua rota pedir o ID no path
+          await fetch(`${API_BASE}/profile/${dbUserId}`, {
             method: 'PUT',
             headers: {
               'Authorization': `Bearer ${token}`,
-              'X-User-Id': uid,
+              'X-User-Id': cognitoSub,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              ...perfilAtual,
-              tour_concluido: true,
-            }),
+            body: JSON.stringify({ tour_concluido: true }),
           });
         } catch (error) {
           console.error('Erro ao salvar conclusão do tour:', error);
