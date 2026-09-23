@@ -3,7 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import './DashboardLayout.css';
 
-import Joyride, { STATUS, EVENT } from 'react-joyride';
+import Joyride, { STATUS, EVENTS } from 'react-joyride';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { API_BASE } from '../config';
 
@@ -175,7 +175,7 @@ export default function DashboardLayout() {
   const handleJoyrideCallback = async (data) => {
     const { status, type } = data;
 
-    if (type === EVENT.TARGET_NOT_FOUND) {
+    if (type === EVENTS.TARGET_NOT_FOUND) {
       // Elemento ainda não montado (ex: página em loading) — não trava o tour,
       // o Joyride já pula automaticamente para o próximo passo.
       console.warn('[Tour] Elemento não encontrado para o passo:', data.step?.target);
