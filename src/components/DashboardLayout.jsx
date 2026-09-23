@@ -21,10 +21,9 @@ export default function DashboardLayout() {
   const [runTour, setRunTour] = useState(false);
   const [tourSteps, setTourSteps] = useState([]);
   const [cognitoSub, setCognitoSub] = useState(null);
-  const [dbUserId, setDbUserId] = useState(null);
-  const [perfilCache, setPerfilCache] = useState({}); // Armazena os dados do perfil para reutilizar no PUT
+  const [perfilCache, setPerfilCache] = useState({});
 
-  // 2. Busca o perfil, guarda o ID interno do banco e os dados para o body
+  // 2. Busca o perfil utilizando o sub do Cognito
   useEffect(() => {
     async function carregarStatusTour() {
       try {
@@ -43,12 +42,8 @@ export default function DashboardLayout() {
         if (!res.ok) return;
         const data = await res.json();
 
-        // Guarda os dados completos para enviar no PUT posteriormente
+        // Guarda os dados para uso posterior
         setPerfilCache(data);
-
-        if (data.id || data.user_id) {
-          setDbUserId(data.id || data.user_id);
-        }
 
         // Ativa o tour se a coluna for falsa ou inexistente
         if (!data.tour_concluido) {
@@ -95,38 +90,37 @@ export default function DashboardLayout() {
     }
   }, [location.pathname]);
 
-  // 4. Salva no banco de dados enviando o objeto completo exigido pelo PUT
+  // 4. Salva no banco de dados quando o usuário pula ou finaliza
   const handleJoyrideCallback = async (data) => {
     const { status } = data;
 
     if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
       setRunTour(false);
 
-      if (cognitoSub && internalUserId) {
+      if (cognitoSub) {
         try {
           const session = await fetchAuthSession();
           const token   = session.tokens.idToken.toString();
 
-          // Pega tudo o que veio do GET do perfil e atualiza apenas o estado do tour
-          const payloadParaEnviar = {
-            email: perfilCache.email,
-            nome: perfilCache.nome,
-            estilo_preferido: perfilCache.estilo_preferido,
-            formato_preferido: perfilCache.formato_preferido,
-            objetivos_estudo: perfilCache.objetivos_estudo,
-            cognito_id: perfilCache.cognito_id,
-            // Adiciona o tour_concluido apenas se já fizer parte do modelo ou se quiser testar
+          // Monta o payload estritamente com os dados base retornados pelo GET
+          const payloadAtualizado = {
+            email: perfilCache.email || '',
+            nome: perfilCache.nome || '',
+            estilo_preferido: perfilCache.estilo_preferido || '',
+            formato_preferido: perfilCache.formato_preferido || '',
+            objetivos_estudo: perfilCache.objetivos_estudo || '',
+            cognito_id: perfilCache.cognito_id || cognitoSub,
             tour_concluido: true
           };
 
-          await fetch(`${API_BASE}/profile/${internalUserId}`, {
+          await fetch(`${API_BASE}/profile`, {
             method: 'PUT',
             headers: {
               'Authorization': `Bearer ${token}`,
               'X-User-Id': cognitoSub,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(payloadParaEnviar),
+            body: JSON.stringify(payloadAtualizado),
           });
         } catch (error) {
           console.error('Erro ao salvar conclusão do tour:', error);
@@ -134,7 +128,7 @@ export default function DashboardLayout() {
       }
     }
   };
-  
+
   return (
     <div className={`dl-root${collapsed ? ' dl-root--collapsed' : ''}`}>
 
