@@ -6,7 +6,7 @@ import './DashboardLayout.css';
 // 1. Importações do Joyride, Amplify e Config
 import Joyride, { STATUS } from 'react-joyride';
 import { fetchAuthSession } from 'aws-amplify/auth';
-import { API_BASE } from '../config'; 
+import { API_BASE } from '../config';
 
 /**
  * DashboardLayout
@@ -43,10 +43,10 @@ export default function DashboardLayout() {
         }
       } catch (error) {
         console.error('Erro ao verificar status do tour:', error);
-        
+
         // Em caso de erro (ex: testando local sem a coluna), forçamos para testar a UI
         // Remova ou comente a linha abaixo quando a API estiver pronta
-        setTimeout(() => setRunTour(true), 500); 
+        setTimeout(() => setRunTour(true), 500);
       }
     }
     carregarStatusTour();
@@ -56,56 +56,57 @@ export default function DashboardLayout() {
   useEffect(() => {
     if (location.pathname === '/dashboard') {
       setTourSteps([
-        { 
-          target: '.dl-topbar__brand', 
-          content: 'Bem-vindo ao Bright EdTech! A sua jornada começa aqui.', 
-          disableBeacon: true 
+        {
+          target: '.dl-topbar__brand',
+          content: 'Bem-vindo ao Bright EdTech! A sua jornada começa aqui.',
+          disableBeacon: true
         },
-        { 
+        {
           target: '.tour-boas-vindas', // Classe que você definiu no OverviewPage/Dashboard
-          content: 'Este é o seu painel principal de estudos.' 
+          content: 'Este é o seu painel principal de estudos.'
         }
       ]);
     } else if (location.pathname === '/documents') {
       setTourSteps([
-        { 
+        {
           target: '.tour-upload-btn', // Adicione esta classe ao botão na DocumentsPage
-          content: 'Faça o upload dos seus PDFs por aqui.' 
+          content: 'Faça o upload dos seus PDFs por aqui.'
         }
       ]);
     } else if (location.pathname === '/profile') {
       setTourSteps([
-        { 
-          target: '.pf-header__name', 
-          content: 'Aqui você gerencia o seu nome público e configurações de conta.' 
+        {
+          target: '.pf-header__name',
+          content: 'Aqui você gerencia o seu nome público e configurações de conta.'
         }
       ]);
     } else {
       // Limpa os passos se a rota atual não tiver balões configurados
-      setTourSteps([]); 
+      setTourSteps([]);
     }
   }, [location.pathname]);
 
   // 4. Salva no banco de dados quando o usuário pula ou finaliza
   const handleJoyrideCallback = async (data) => {
     const { status } = data;
-    
+
     if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
       setRunTour(false);
-      
+
       if (userId) {
         try {
           const session = await fetchAuthSession();
           const token = session.tokens.idToken.toString();
-          
-          await fetch(`${API_BASE}/profile/${userId}`, {
+          const uid = session.tokens.idToken.payload.sub;
+
+          await fetch(`${API_BASE}/profile/${uid}`, {
             method: 'PUT',
             headers: {
-              Authorization: `Bearer ${token}`,
+              'Authorization': `Bearer ${token}`,
+              'X-User-Id': uid, // <-- Incluir também aqui
               'Content-Type': 'application/json',
             },
-            // IMPORTANTE: O backend precisa suportar a atualização parcial (PATCH/PUT) deste campo
-            body: JSON.stringify({ tour_concluido: true }), 
+            body: JSON.stringify({ tour_concluido: true }),
           });
         } catch (error) {
           console.error('Erro ao salvar conclusão do tour:', error);
@@ -116,20 +117,20 @@ export default function DashboardLayout() {
 
   return (
     <div className={`dl-root${collapsed ? ' dl-root--collapsed' : ''}`}>
-      
+
       {/* 5. Injeção do Componente Global */}
       <Joyride
         steps={tourSteps}
         // O tour só roda se runTour for true E a página atual tiver passos configurados
-        run={runTour && tourSteps.length > 0} 
+        run={runTour && tourSteps.length > 0}
         continuous={true}
         showSkipButton={true}
         callback={handleJoyrideCallback}
-        styles={{ 
-          options: { 
+        styles={{
+          options: {
             primaryColor: '#556b2f', // Verde Oliva
-            zIndex: 10000 
-          } 
+            zIndex: 10000
+          }
         }}
       />
 
@@ -160,7 +161,7 @@ export default function DashboardLayout() {
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor"
               strokeWidth="1.8" strokeLinecap="round">
-              <path d="M3 5h14M3 10h14M3 15h14"/>
+              <path d="M3 5h14M3 10h14M3 15h14" />
             </svg>
           </button>
           <span className="dl-topbar__brand">Bright EdTech</span>
