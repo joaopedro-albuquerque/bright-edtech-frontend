@@ -317,7 +317,7 @@ export default function OverviewPage() {
     <div className="ov-root">
 
       {/* ── Cabeçalho de boas-vindas ── */}
-      <header className="ov-header">
+      <header className="ov-header tour-boas-vindas">
         <div className="ov-header__top">
           <div>
             <div className="ov-header__greeting">
