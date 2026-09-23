@@ -24,6 +24,21 @@ const TOUR_SEEN_STORAGE_KEY = 'brightedtech:tourSeenRoutes';
 // sem fechar a aba/navegador.
 const TOUR_COMPLETED_STORAGE_KEY = 'brightedtech:tourCompletedLocally';
 
+/** Quanto tempo esperar a página “pronta” antes de filtrar com o que houver. */
+const PAGE_READY_TIMEOUT_MS = 3000;
+
+/** Seletor que indica que o conteúdo principal da rota já montou (pós-loading). */
+const PAGE_READY_SELECTOR = {
+  '/dashboard': '.tour-boas-vindas, .ov-error',
+  '/documents': '.dp-header__actions',
+  '/revisao-geral': '.fq-header__title',
+  '/profile': '.pf-header__name',
+};
+
+function isTargetPresent(target) {
+  return target === 'body' || Boolean(document.querySelector(target));
+}
+
 function getStepsForRoute(pathname) {
   switch (pathname) {
     case '/dashboard':
@@ -64,12 +79,14 @@ function getStepsForRoute(pathname) {
           target: '.sidebar__nav',
           placement: 'right',
           disableBeacon: true,
+          disableScrolling: true,
           content: 'Use o menu lateral para navegar entre Visão Geral, Gestão de Documentos e Revisão Geral.',
         },
         {
           target: '.sidebar__profile',
           placement: 'right',
           disableBeacon: true,
+          disableScrolling: true,
           content: 'Aqui você acessa o seu perfil e, quando quiser, encerra a sessão com o botão de sair.',
         },
       ];
@@ -142,12 +159,31 @@ function getStepsForRoute(pathname) {
   }
 }
 
+/** Mantém só passos cujo alvo já existe no DOM (body sempre entra). */
+function filterAvailableSteps(steps) {
+  return steps.filter((step) => isTargetPresent(step.target));
+}
+
+function isPageReady(pathname) {
+  const selector = PAGE_READY_SELECTOR[pathname];
+  if (!selector) return true;
+  return Boolean(document.querySelector(selector));
+}
+
 function loadSeenRoutes() {
   try {
     const raw = sessionStorage.getItem(TOUR_SEEN_STORAGE_KEY);
     return raw ? new Set(JSON.parse(raw)) : new Set();
   } catch {
     return new Set();
+  }
+}
+
+function saveSeenRoutes(routes) {
+  try {
+    sessionStorage.setItem(TOUR_SEEN_STORAGE_KEY, JSON.stringify([...routes]));
+  } catch (error) {
+    console.error('Erro ao salvar progresso local do tour:', error);
   }
 }
 
@@ -241,16 +277,12 @@ export default function DashboardLayout() {
     carregarStatusTour();
   }, []);
 
-  // 2. Define os passos do tour para a rota atual e reinicia o índice
-  useEffect(() => {
-    setTourSteps(getStepsForRoute(location.pathname));
-    setStepIndex(0);
-  }, [location.pathname]);
-
   // 3. Marca a rota atual como concluída e, se todas as rotas do tour já
   //    tiverem sido vistas, marca o tour inteiro como concluído.
   const finalizarTourDaRota = useCallback(() => {
     setRunTour(false);
+    setTourSteps([]);
+    setStepIndex(0);
     setSeenRoutes((prev) => {
       const rotasVistas = new Set(prev).add(location.pathname);
 
@@ -258,7 +290,7 @@ export default function DashboardLayout() {
       if (!faltaAlgumaRota) {
         setTourDone(true);
         try {
-          localStorage.removeItem(TOUR_SEEN_STORAGE_KEY);
+          sessionStorage.removeItem(TOUR_SEEN_STORAGE_KEY);
         } catch { /* noop */ }
         saveLocalTourCompleted();
       }
@@ -267,56 +299,125 @@ export default function DashboardLayout() {
     });
   }, [location.pathname]);
 
-  // 4. Decide se o tour deve rodar. Diferente de antes, aqui NÃO pulamos um
-  //    passo só porque o elemento-alvo ainda não existe na tela (ex: página
-  //    ainda carregando os dados). Em vez disso, escondemos o tour e ficamos
-  //    observando o DOM; assim que o elemento for criado, o card aparece
-  //    nele — sem pular etapas e sem travar o onboarding.
+  // 2. Espera a página ficar pronta, filtra passos pelos alvos presentes e
+  //    reinicia o índice. Assim contas vazias não travam em seletores que
+  //    nunca entram no DOM (ex.: .ov-quick-resumo-list sem documentos).
+  useEffect(() => {
+    setRunTour(false);
+    setTourSteps([]);
+    setStepIndex(0);
+
+    if (tourDone || seenRoutes.has(location.pathname)) {
+      return undefined;
+    }
+
+    const candidatos = getStepsForRoute(location.pathname);
+    if (candidatos.length === 0) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let observer = null;
+    let readyTimer = null;
+    let safetyTimer = null;
+
+    const aplicarPassosFiltrados = () => {
+      if (cancelled) return;
+      const filtrados = filterAvailableSteps(candidatos);
+      if (filtrados.length === 0) {
+        // Nada utilizável nesta rota — marca como vista para não ficar presa.
+        finalizarTourDaRota();
+        return;
+      }
+      setTourSteps(filtrados);
+      setStepIndex(0);
+    };
+
+    const tentarAplicarSePronto = () => {
+      if (!isPageReady(location.pathname)) return false;
+      if (observer) {
+        observer.disconnect();
+        observer = null;
+      }
+      if (safetyTimer) {
+        clearTimeout(safetyTimer);
+        safetyTimer = null;
+      }
+      // Pequena pausa para o layout assentar antes de medir os alvos.
+      readyTimer = setTimeout(aplicarPassosFiltrados, 80);
+      return true;
+    };
+
+    if (!tentarAplicarSePronto()) {
+      observer = new MutationObserver(() => {
+        tentarAplicarSePronto();
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+
+      safetyTimer = setTimeout(() => {
+        if (cancelled) return;
+        if (observer) {
+          observer.disconnect();
+          observer = null;
+        }
+        aplicarPassosFiltrados();
+      }, PAGE_READY_TIMEOUT_MS);
+    }
+
+    return () => {
+      cancelled = true;
+      if (observer) observer.disconnect();
+      if (readyTimer) clearTimeout(readyTimer);
+      if (safetyTimer) clearTimeout(safetyTimer);
+    };
+  }, [tourDone, location.pathname, seenRoutes, finalizarTourDaRota]);
+
+  // 4. Exibe o passo atual. Entre passos fazemos um microciclo run=false →
+  //    remedir → run=true para o spotlight nascer no bounding box certo
+  //    (evita herdar o tamanho do .sidebar__nav no passo do perfil).
   useEffect(() => {
     if (tourDone || tourSteps.length === 0 || seenRoutes.has(location.pathname)) {
       setRunTour(false);
-      return;
+      return undefined;
     }
 
-    // Já passamos por todos os passos definidos para esta rota.
     if (stepIndex >= tourSteps.length) {
       finalizarTourDaRota();
-      return;
+      return undefined;
     }
 
     const step = tourSteps[stepIndex];
-    const alvoExiste = step.target === 'body' || Boolean(document.querySelector(step.target));
-
-    if (alvoExiste) {
-      // Pequena pausa só no primeiro passo, pra deixar a página assentar
-      // antes do overlay aparecer.
-      const delay = stepIndex === 0 ? 500 : 0;
-      const timer = setTimeout(() => setRunTour(true), delay);
-      return () => clearTimeout(timer);
+    if (!isTargetPresent(step.target)) {
+      // Alvo sumiu entre o filtro e agora — pula para o próximo.
+      setRunTour(false);
+      setStepIndex((i) => i + 1);
+      return undefined;
     }
 
-    // Elemento ainda não existe: escondemos o tour e esperamos, na própria
-    // sessão, ele ser criado (ex: dado terminando de carregar). Assim que
-    // aparecer no DOM, o Joyride mostra o card sobre ele.
     setRunTour(false);
-    const observer = new MutationObserver(() => {
-      if (document.querySelector(step.target)) {
-        observer.disconnect();
-        setRunTour(true);
-      }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+    // Passo 0: espera um pouco a página assentar; passos seguintes: rAF +
+    // pequeno delay para o Joyride remedir o alvo (sidebar fixed).
+    const delay = stepIndex === 0 ? 500 : 80;
+    let raf1 = 0;
+    let raf2 = 0;
+    const timer = setTimeout(() => {
+      raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(() => {
+          setRunTour(true);
+        });
+      });
+    }, delay);
 
-    return () => observer.disconnect();
+    return () => {
+      clearTimeout(timer);
+      if (raf1) cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
   }, [tourDone, tourSteps, stepIndex, location.pathname, seenRoutes, finalizarTourDaRota]);
 
   // 5. Persiste localmente quais rotas já tiveram o tour visto/pulado
   useEffect(() => {
-    try {
-      localStorage.setItem(TOUR_SEEN_STORAGE_KEY, JSON.stringify([...seenRoutes]));
-    } catch (error) {
-      console.error('Erro ao salvar progresso local do tour:', error);
-    }
+    saveSeenRoutes(seenRoutes);
   }, [seenRoutes]);
 
   // 6. Callback do Joyride: avança/volta o nosso índice controlado e trata
@@ -325,17 +426,16 @@ export default function DashboardLayout() {
     const { status, type, action, index } = data;
 
     if (type === EVENTS.STEP_AFTER) {
-      // Avança ou volta o passo. O efeito acima cuida de esperar o próximo
-      // alvo existir antes de exibir o card.
+      // Avança ou volta o passo. O efeito acima cuida de remedir o próximo alvo.
+      setRunTour(false);
       setStepIndex(index + (action === ACTIONS.PREV ? -1 : 1));
       return;
     }
 
     if (type === EVENTS.TARGET_NOT_FOUND) {
-      // Segurança extra: como já checamos a existência do alvo antes de
-      // rodar o tour, isso não deveria disparar. Se disparar mesmo assim,
-      // apenas escondemos e deixamos o efeito de espera assumir de novo.
+      // Pula o passo quebrado em vez de travar o tour.
       setRunTour(false);
+      setStepIndex((i) => i + 1);
       return;
     }
 
@@ -399,7 +499,7 @@ export default function DashboardLayout() {
         showSkipButton={true}
         showProgress={false}
         disableOverlayClose={true}
-        scrollToFirstStep={true}
+        scrollToFirstStep={false}
         callback={handleJoyrideCallback}
         floaterProps={{
           // Desliga a animação padrão do react-floater (que desliza/transforma
