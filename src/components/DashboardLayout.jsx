@@ -22,19 +22,18 @@ export default function DashboardLayout() {
   const [tourSteps, setTourSteps] = useState([]);
   const [userId, setUserId] = useState(null);
 
-  // 2. Busca no banco de dados se o usuário já fez o tour
+  // 2. Busca no banco de dados se o usuário já fez o tour utilizando o sub do Cognito
   useEffect(() => {
     async function carregarStatusTour() {
       try {
         const session = await fetchAuthSession();
-        const uid = session.tokens.idToken.payload.sub;
-        const token = session.tokens.idToken.toString();
+        const token   = session.tokens.idToken.toString();
+        const uid     = session.tokens.idToken.payload.sub; // O sub do Cognito correto
         setUserId(uid);
 
         const res = await fetch(`${API_BASE}/profile/${uid}`, {
           headers: { 
-            'Authorization': `Bearer ${token}`,
-            'X-User-Id': uid // <-- Cabeçalho exigido pelo backend incluído na leitura
+            'Authorization': `Bearer ${token}`
           },
         });
         
@@ -43,13 +42,10 @@ export default function DashboardLayout() {
 
         // Ativa o tour se a coluna for falsa ou inexistente
         if (!data.tour_concluido) {
-          // Pequeno atraso para garantir renderização do DOM
           setTimeout(() => setRunTour(true), 500);
         }
       } catch (error) {
         console.error('Erro ao verificar status do tour:', error);
-
-        // Em caso de erro (ex: testando local sem a coluna), forçamos para testar a UI
         setTimeout(() => setRunTour(true), 500);
       }
     }
@@ -66,14 +62,14 @@ export default function DashboardLayout() {
           disableBeacon: true
         },
         {
-          target: '.tour-boas-vindas', // Classe que você definiu no OverviewPage/Dashboard
+          target: '.tour-boas-vindas',
           content: 'Este é o seu painel principal de estudos.'
         }
       ]);
     } else if (location.pathname === '/documents') {
       setTourSteps([
         {
-          target: '.tour-upload-btn', // Adicione esta classe ao botão na DocumentsPage
+          target: '.tour-upload-btn',
           content: 'Faça o upload dos seus PDFs por aqui.'
         }
       ]);
@@ -85,7 +81,6 @@ export default function DashboardLayout() {
         }
       ]);
     } else {
-      // Limpa os passos se a rota atual não tiver balões configurados
       setTourSteps([]);
     }
   }, [location.pathname]);
@@ -100,14 +95,13 @@ export default function DashboardLayout() {
       if (userId) {
         try {
           const session = await fetchAuthSession();
-          const token = session.tokens.idToken.toString();
-          const uid = session.tokens.idToken.payload.sub;
+          const token   = session.tokens.idToken.toString();
+          const uid     = session.tokens.idToken.payload.sub;
 
           await fetch(`${API_BASE}/profile/${uid}`, {
             method: 'PUT',
             headers: {
               'Authorization': `Bearer ${token}`,
-              'X-User-Id': uid, // <-- Cabeçalho exigido pelo backend incluído na atualização
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ tour_concluido: true }),
@@ -125,14 +119,13 @@ export default function DashboardLayout() {
       {/* 5. Injeção do Componente Global */}
       <Joyride
         steps={tourSteps}
-        // O tour só roda se runTour for true E a página atual tiver passos configurados
         run={runTour && tourSteps.length > 0}
         continuous={true}
         showSkipButton={true}
         callback={handleJoyrideCallback}
         styles={{
           options: {
-            primaryColor: '#556b2f', // Verde Oliva
+            primaryColor: '#556b2f',
             zIndex: 10000
           }
         }}
