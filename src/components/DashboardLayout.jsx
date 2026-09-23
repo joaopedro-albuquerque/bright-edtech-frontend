@@ -22,18 +22,19 @@ export default function DashboardLayout() {
   const [tourSteps, setTourSteps] = useState([]);
   const [userId, setUserId] = useState(null);
 
-  // 2. Busca no banco de dados se o usuário já fez o tour utilizando o sub do Cognito
+  // 2. Busca no banco de dados se o usuário já fez o tour
   useEffect(() => {
     async function carregarStatusTour() {
       try {
         const session = await fetchAuthSession();
         const token   = session.tokens.idToken.toString();
-        const uid     = session.tokens.idToken.payload.sub; // O sub do Cognito correto
+        const uid     = session.tokens.idToken.payload.sub;
         setUserId(uid);
 
         const res = await fetch(`${API_BASE}/profile/${uid}`, {
           headers: { 
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${token}`,
+            'X-User-Id': uid // <-- Cabeçalho obrigatório exigido pelo backend
           },
         });
         
@@ -102,6 +103,7 @@ export default function DashboardLayout() {
             method: 'PUT',
             headers: {
               'Authorization': `Bearer ${token}`,
+              'X-User-Id': uid, // <-- Cabeçalho obrigatório exigido pelo backend
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({ tour_concluido: true }),
