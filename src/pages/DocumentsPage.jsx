@@ -231,7 +231,7 @@ export default function DocumentsPage() {
   /* ─────────────────────────────────────────
      3. ENTRAR EM UMA PASTA
   ───────────────────────────────────────── */
-  const openFolder = async (folder) => {
+  const loadFolderContent = async (folder) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -243,7 +243,6 @@ export default function DocumentsPage() {
       if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível abrir a pasta.`);
       const data = await res.json();
       setCurrentFolderId(folder.id);
-      setBreadcrumb((prev) => [...prev, { id: folder.id, nome: folder.nome }]);
       setFolders(data.subpastas ?? []);
       const filesData = data.arquivos ?? [];
       setFiles(filesData);
@@ -251,10 +250,20 @@ export default function DocumentsPage() {
       if (filesData.length > 0 && dbUserId) {
         loadFileCounts(filesData, token, dbUserId);
       }
+      return true;
     } catch (err) {
       setError(err.message);
+      return false;
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const openFolder = async (folder) => {
+    const ok = await loadFolderContent(folder);
+    // Só atualiza o breadcrumb depois do sucesso — evita trilha desalinhada
+    if (ok) {
+      setBreadcrumb((prev) => [...prev, { id: folder.id, nome: folder.nome }]);
     }
   };
 
@@ -268,9 +277,12 @@ export default function DocumentsPage() {
       return;
     }
     const crumb = breadcrumb[targetIndex];
-    setBreadcrumb((prev) => prev.slice(0, targetIndex + 1));
-    await openFolder({ id: crumb.id, nome: crumb.nome });
-    setBreadcrumb((prev) => prev.slice(0, targetIndex + 1));
+    if (!crumb) return;
+    const trail = breadcrumb.slice(0, targetIndex + 1);
+    const ok = await loadFolderContent({ id: crumb.id, nome: crumb.nome });
+    if (ok) {
+      setBreadcrumb(trail);
+    }
   };
 
   /* ─────────────────────────────────────────

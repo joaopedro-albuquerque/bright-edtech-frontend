@@ -189,7 +189,9 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
         <div className="sidebar__divider" />
 
         <div 
-          className={`sidebar__profile${collapsed ? ' sidebar__profile--collapsed' : ''}`} title={collapsed ? userName : undefined}
+          className={`sidebar__profile${collapsed ? ' sidebar__profile--collapsed' : ''}`}
+          data-tour="sidebar-profile"
+          title={collapsed ? userName : undefined}
           onClick={() => navigate('/profile')}
           style={{ cursor: 'pointer' }}>
           <div className="sidebar__avatar">

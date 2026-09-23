@@ -66,7 +66,8 @@ export default function ProfilePage() {
   const navigate = useNavigate();
 
   /* ── Estados de dados ── */
-  const [userId,    setUserId]    = useState('');
+  // dbUserId = UUID interno do banco (não o Cognito sub)
+  const [dbUserId,  setDbUserId]  = useState('');
   const [email,     setEmail]     = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName,  setLastName]  = useState('');
@@ -83,22 +84,23 @@ export default function ProfilePage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   /* ─────────────────────────────────────────
-     GET /profile/{userId}
+     GET /profile — identidade via JWT (igual Sidebar)
   ───────────────────────────────────────── */
   const loadProfile = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const { token, userId: uid, email: em } = await getAuthHeaders();
-      setUserId(uid);
-      setEmail(em);
+      const { token, email: em } = await getAuthHeaders();
 
-      const res = await fetch(`${API_BASE}/profile/${uid}`, {
+      const res = await fetch(`${API_BASE}/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível carregar o perfil.`);
 
       const data = await res.json();
+
+      setDbUserId(data.id ?? '');
+      setEmail(data.email ?? em ?? '');
 
       /* O back-end envia "nome" como string completa.
          Quebramos no primeiro espaço para separar nome e sobrenome. */
@@ -121,7 +123,7 @@ export default function ProfilePage() {
   useEffect(() => { loadProfile(); }, [loadProfile]);
 
   /* ─────────────────────────────────────────
-     PUT /profile/{userId} — salvar alterações
+     PUT /profile — salvar alterações (JWT)
   ───────────────────────────────────────── */
   const handleSave = async (e) => {
     e.preventDefault();
@@ -135,13 +137,14 @@ export default function ProfilePage() {
       // Junta nome + sobrenome de volta em um único campo
       const nomeCompleto = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
 
-      const res = await fetch(`${API_BASE}/profile/${userId}`, {
+      // UsuarioBase exige email; demais campos opcionais
+      const res = await fetch(`${API_BASE}/profile`, {
         method:  'PUT',
         headers: {
           Authorization:  `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ nome: nomeCompleto }),
+        body: JSON.stringify({ email, nome: nomeCompleto }),
       });
       if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível salvar as alterações.`);
 
@@ -158,7 +161,7 @@ export default function ProfilePage() {
   /* ─────────────────────────────────────────
      DELETE — excluir conta
      Fluxo obrigatório:
-       1. DELETE na API
+       1. DELETE na API (UUID DB + X-User-Id)
        2. deleteUser() do Amplify
        3. navigate('/')
   ───────────────────────────────────────── */
@@ -168,10 +171,17 @@ export default function ProfilePage() {
     try {
       const { token } = await getAuthHeaders();
 
-      // 1. Remove do back-end
-      const res = await fetch(`${API_BASE}/profile/${userId}`, {
+      if (!dbUserId) {
+        throw new Error('Não foi possível identificar o usuário para exclusão.');
+      }
+
+      // 1. Remove do back-end (rota /{user_id} exige X-User-Id = UUID do banco)
+      const res = await fetch(`${API_BASE}/profile/${dbUserId}`, {
         method:  'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'X-User-Id': dbUserId,
+        },
       });
       if (!res.ok) throw new Error(`Erro ${res.status}: falha ao excluir conta no servidor.`);
 

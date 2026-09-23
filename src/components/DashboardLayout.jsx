@@ -83,7 +83,7 @@ function getStepsForRoute(pathname) {
           content: 'Use o menu lateral para navegar entre Visão Geral, Gestão de Documentos e Revisão Geral.',
         },
         {
-          target: '.sidebar__profile',
+          target: '[data-tour="sidebar-profile"]',
           placement: 'right',
           disableBeacon: true,
           disableScrolling: true,
@@ -395,9 +395,12 @@ export default function DashboardLayout() {
     }
 
     setRunTour(false);
-    // Passo 0: espera um pouco a página assentar; passos seguintes: rAF +
-    // pequeno delay para o Joyride remedir o alvo (sidebar fixed).
-    const delay = stepIndex === 0 ? 500 : 80;
+    // Passo 0: espera a página assentar. Passos da sidebar (fixed): delay
+    // maior para o Joyride remedir o bounding box (evita spotlight herdado
+    // do .sidebar__nav no passo do perfil). Demais passos: microciclo curto.
+    const isSidebarStep = typeof step.target === 'string'
+      && (step.target.includes('sidebar') || step.target.includes('data-tour="sidebar'));
+    const delay = stepIndex === 0 ? 500 : (isSidebarStep ? 180 : 80);
     let raf1 = 0;
     let raf2 = 0;
     const timer = setTimeout(() => {
