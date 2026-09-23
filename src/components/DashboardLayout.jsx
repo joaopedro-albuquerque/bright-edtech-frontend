@@ -102,23 +102,31 @@ export default function DashboardLayout() {
     if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
       setRunTour(false);
 
-      if (cognitoSub && dbUserId) {
+      if (cognitoSub && internalUserId) {
         try {
           const session = await fetchAuthSession();
           const token   = session.tokens.idToken.toString();
 
-          await fetch(`${API_BASE}/profile/${dbUserId}`, {
+          // Pega tudo o que veio do GET do perfil e atualiza apenas o estado do tour
+          const payloadParaEnviar = {
+            email: perfilCache.email,
+            nome: perfilCache.nome,
+            estilo_preferido: perfilCache.estilo_preferido,
+            formato_preferido: perfilCache.formato_preferido,
+            objetivos_estudo: perfilCache.objetivos_estudo,
+            cognito_id: perfilCache.cognito_id,
+            // Adiciona o tour_concluido apenas se já fizer parte do modelo ou se quiser testar
+            tour_concluido: true
+          };
+
+          await fetch(`${API_BASE}/profile/${internalUserId}`, {
             method: 'PUT',
             headers: {
               'Authorization': `Bearer ${token}`,
               'X-User-Id': cognitoSub,
               'Content-Type': 'application/json',
             },
-            // Envia o perfil completo atualizado com a flag do tour
-            body: JSON.stringify({
-              ...perfilCache,
-              tour_concluido: true,
-            }),
+            body: JSON.stringify(payloadParaEnviar),
           });
         } catch (error) {
           console.error('Erro ao salvar conclusão do tour:', error);
@@ -126,7 +134,7 @@ export default function DashboardLayout() {
       }
     }
   };
-
+  
   return (
     <div className={`dl-root${collapsed ? ' dl-root--collapsed' : ''}`}>
 
