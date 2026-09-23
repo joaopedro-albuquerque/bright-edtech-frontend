@@ -852,10 +852,11 @@ export default function DocumentsPage() {
         <section className="dp-section">
           {breadcrumb.length > 0 && <h2 className="dp-section__label">Pastas</h2>}
           <div className="dp-grid">
-            {folders.map((folder) => (
+            {folders.map((folder, folderIndex) => (
               <div
                 key={folder.id}
                 className={`dp-card dp-card--folder${openMenuId === folder.id ? ' dp-card--menu-open' : ''}`}
+                data-tour={folderIndex === 0 ? 'dp-first-folder' : undefined}
               >
                 {/* Área clicável para entrar na pasta */}
                 <button

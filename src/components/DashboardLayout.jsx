@@ -30,7 +30,8 @@ const PAGE_READY_TIMEOUT_MS = 3000;
 /** Seletor que indica que o conteúdo principal da rota já montou (pós-loading). */
 const PAGE_READY_SELECTOR = {
   '/dashboard': '.tour-boas-vindas, .ov-error',
-  '/documents': '.dp-header__actions',
+  // Pastas/vazio/arquivos — não só o header (senão o tour filtra cedo demais).
+  '/documents': '.dp-grid, .dp-empty, .dp-file-list',
   '/revisao-geral': '.fq-header__title',
   '/profile': '.pf-header__name',
 };
@@ -98,14 +99,19 @@ function getStepsForRoute(pathname) {
           content: 'Aqui você cria pastas para organizar seus documentos e envia novos arquivos para gerar resumos, flashcards e quizzes.',
         },
         {
-          target: '.dp-breadcrumb',
-          disableBeacon: true,
-          content: 'Use a navegação de trilha para saber em qual pasta você está e voltar rapidamente para pastas anteriores.',
-        },
-        {
           target: '.dp-grid',
           disableBeacon: true,
           content: 'Suas pastas aparecem aqui. Clique para abrir, ou use o menu de opções (⋮) para renomear ou excluir.',
+        },
+        {
+          target: '[data-tour="dp-first-folder"]',
+          disableBeacon: true,
+          content: 'Abra uma pasta para ver a trilha de navegação e os arquivos dentro dela. Vamos entrar nesta pasta no próximo passo.',
+        },
+        {
+          target: '.dp-breadcrumb',
+          disableBeacon: true,
+          content: 'Use a navegação de trilha para saber em qual pasta você está e voltar rapidamente para pastas anteriores.',
         },
         {
           target: '.dp-file-list',
@@ -162,6 +168,42 @@ function getStepsForRoute(pathname) {
 /** Mantém só passos cujo alvo já existe no DOM (body sempre entra). */
 function filterAvailableSteps(steps) {
   return steps.filter((step) => isTargetPresent(step.target));
+}
+
+/**
+ * Em /documents, se ainda estamos na raiz com pastas, mantém os passos que
+ * só aparecem depois de abrir um diretório (breadcrumb / lista de arquivos)
+ * e o destaque da primeira pasta — o efeito abre a pasta antes desses passos.
+ */
+function buildTourStepsForRoute(pathname) {
+  const candidatos = getStepsForRoute(pathname);
+  if (pathname !== '/documents') {
+    return filterAvailableSteps(candidatos);
+  }
+
+  const hasFolders = Boolean(document.querySelector('.dp-card--folder'));
+  const insideFolder = Boolean(document.querySelector('.dp-breadcrumb'));
+
+  return candidatos.filter((step) => {
+    if (isTargetPresent(step.target)) return true;
+    if (!insideFolder && hasFolders) {
+      return (
+        step.target === '[data-tour="dp-first-folder"]'
+        || step.target === '.dp-breadcrumb'
+        || step.target === '.dp-file-list'
+      );
+    }
+    return false;
+  });
+}
+
+function openFirstDocumentsFolder() {
+  const btn =
+    document.querySelector('[data-tour="dp-first-folder"] .dp-card__body')
+    || document.querySelector('.dp-card--folder .dp-card__body');
+  if (!btn) return false;
+  btn.click();
+  return true;
 }
 
 function isPageReady(pathname) {
@@ -323,7 +365,7 @@ export default function DashboardLayout() {
 
     const aplicarPassosFiltrados = () => {
       if (cancelled) return;
-      const filtrados = filterAvailableSteps(candidatos);
+      const filtrados = buildTourStepsForRoute(location.pathname);
       if (filtrados.length === 0) {
         // Nada utilizável nesta rota — marca como vista para não ficar presa.
         finalizarTourDaRota();
@@ -388,7 +430,33 @@ export default function DashboardLayout() {
 
     const step = tourSteps[stepIndex];
     if (!isTargetPresent(step.target)) {
-      // Alvo sumiu entre o filtro e agora — pula para o próximo.
+      // Em documentos: se o alvo só existe dentro de uma pasta, abrimos a
+      // primeira pasta e esperamos o DOM — em vez de pular/encerrar o tour.
+      const precisaAbrirPasta =
+        location.pathname === '/documents'
+        && (step.target === '.dp-breadcrumb' || step.target === '.dp-file-list');
+
+      if (precisaAbrirPasta && openFirstDocumentsFolder()) {
+        setRunTour(false);
+        const observer = new MutationObserver(() => {
+          if (isTargetPresent(step.target)) {
+            observer.disconnect();
+            setRunTour(true);
+          }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+        const timeout = setTimeout(() => {
+          observer.disconnect();
+          // Pasta vazia sem o alvo (ex.: sem arquivos) — pula só este passo.
+          setStepIndex((i) => i + 1);
+        }, PAGE_READY_TIMEOUT_MS);
+        return () => {
+          observer.disconnect();
+          clearTimeout(timeout);
+        };
+      }
+
+      // Alvo sumiu e não dá para revelar — pula para o próximo.
       setRunTour(false);
       setStepIndex((i) => i + 1);
       return undefined;
@@ -431,7 +499,20 @@ export default function DashboardLayout() {
     if (type === EVENTS.STEP_AFTER) {
       // Avança ou volta o passo. O efeito acima cuida de remedir o próximo alvo.
       setRunTour(false);
-      setStepIndex(index + (action === ACTIONS.PREV ? -1 : 1));
+      const nextIndex = index + (action === ACTIONS.PREV ? -1 : 1);
+      const nextStep = tourSteps[nextIndex];
+      // Ao avançar para breadcrumb/arquivos, abre a primeira pasta antes
+      // do próximo card (tour de documentos continua dentro do diretório).
+      if (
+        action === ACTIONS.NEXT
+        && location.pathname === '/documents'
+        && nextStep
+        && !isTargetPresent(nextStep.target)
+        && (nextStep.target === '.dp-breadcrumb' || nextStep.target === '.dp-file-list')
+      ) {
+        openFirstDocumentsFolder();
+      }
+      setStepIndex(nextIndex);
       return;
     }
 
