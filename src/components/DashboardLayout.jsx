@@ -21,9 +21,10 @@ export default function DashboardLayout() {
   const [runTour, setRunTour] = useState(false);
   const [tourSteps, setTourSteps] = useState([]);
   const [cognitoSub, setCognitoSub] = useState(null);
+  const [internalUserId, setInternalUserId] = useState(null);
   const [perfilCache, setPerfilCache] = useState({});
 
-  // 2. Busca o perfil utilizando o sub do Cognito
+  // 2. Busca o perfil e armazena o UUID interno do banco de dados (id)
   useEffect(() => {
     async function carregarStatusTour() {
       try {
@@ -42,8 +43,13 @@ export default function DashboardLayout() {
         if (!res.ok) return;
         const data = await res.json();
 
-        // Guarda os dados para uso posterior
+        // Salva o cache completo do perfil
         setPerfilCache(data);
+
+        // Captura o UUID interno retornado pelo backend (propriedade 'id')
+        if (data.id) {
+          setInternalUserId(data.id);
+        }
 
         // Ativa o tour se a coluna for falsa ou inexistente
         if (!data.tour_concluido) {
@@ -90,30 +96,30 @@ export default function DashboardLayout() {
     }
   }, [location.pathname]);
 
-  // 4. Salva no banco de dados quando o usuário pula ou finaliza
+  // 4. Salva no banco de dados usando PUT /profile/{user_id} conforme o Swagger
   const handleJoyrideCallback = async (data) => {
     const { status } = data;
 
     if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
       setRunTour(false);
 
-      if (cognitoSub) {
+      if (cognitoSub && internalUserId) {
         try {
           const session = await fetchAuthSession();
           const token   = session.tokens.idToken.toString();
 
-          // Monta o payload estritamente com os dados base retornados pelo GET
+          // Monta o payload estritamente com os campos aceitos pelo UsuarioBase do Swagger
           const payloadAtualizado = {
             email: perfilCache.email || '',
-            nome: perfilCache.nome || '',
-            estilo_preferido: perfilCache.estilo_preferido || '',
-            formato_preferido: perfilCache.formato_preferido || '',
-            objetivos_estudo: perfilCache.objetivos_estudo || '',
+            nome: perfilCache.nome || null,
+            estilo_preferido: perfilCache.estilo_preferido || null,
+            formato_preferido: perfilCache.formato_preferido || null,
+            objetivos_estudo: perfilCache.objetivos_estudo || null,
             cognito_id: perfilCache.cognito_id || cognitoSub,
-            tour_concluido: true
+            // tour_concluido omitido ou adicionado se a coluna já existir no backend
           };
 
-          await fetch(`${API_BASE}/profile`, {
+          await fetch(`${API_BASE}/profile/${internalUserId}`, {
             method: 'PUT',
             headers: {
               'Authorization': `Bearer ${token}`,
