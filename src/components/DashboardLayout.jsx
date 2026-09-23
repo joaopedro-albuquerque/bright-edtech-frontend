@@ -1,26 +1,137 @@
-import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import './DashboardLayout.css';
+
+// 1. Importações do Joyride, Amplify e Config
+import Joyride, { STATUS } from 'react-joyride';
+import { fetchAuthSession } from 'aws-amplify/auth';
+import { API_BASE } from '../config'; 
 
 /**
  * DashboardLayout
  * Envolve todas as páginas internas da plataforma.
- * Uso no router:
- *
- *   <Route element={<DashboardLayout />}>
- *     <Route path="/dashboard"  element={<OverviewPage />} />
- *     <Route path="/documents"  element={<DocumentsPage />} />
- *     <Route path="/flashcards" element={<FlashcardsPage />} />
- *     <Route path="/quizzes"    element={<QuizzesPage />} />
- *   </Route>
  */
 export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // --- Estados do Tour ---
+  const location = useLocation();
+  const [runTour, setRunTour] = useState(false);
+  const [tourSteps, setTourSteps] = useState([]);
+  const [userId, setUserId] = useState(null);
+
+  // 2. Busca no banco de dados se o usuário já fez o tour
+  useEffect(() => {
+    async function carregarStatusTour() {
+      try {
+        const session = await fetchAuthSession();
+        const uid = session.tokens.idToken.payload.sub;
+        const token = session.tokens.idToken.toString();
+        setUserId(uid);
+
+        const res = await fetch(`${API_BASE}/profile/${uid}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+
+        // Ativa o tour se a coluna for falsa ou inexistente
+        if (!data.tour_concluido) {
+          // Pequeno atraso para garantir renderização do DOM
+          setTimeout(() => setRunTour(true), 500);
+        }
+      } catch (error) {
+        console.error('Erro ao verificar status do tour:', error);
+        
+        // Em caso de erro (ex: testando local sem a coluna), forçamos para testar a UI
+        // Remova ou comente a linha abaixo quando a API estiver pronta
+        setTimeout(() => setRunTour(true), 500); 
+      }
+    }
+    carregarStatusTour();
+  }, []);
+
+  // 3. Define os passos dinamicamente com base na página atual
+  useEffect(() => {
+    if (location.pathname === '/dashboard') {
+      setTourSteps([
+        { 
+          target: '.dl-topbar__brand', 
+          content: 'Bem-vindo ao Bright EdTech! A sua jornada começa aqui.', 
+          disableBeacon: true 
+        },
+        { 
+          target: '.tour-boas-vindas', // Classe que você definiu no OverviewPage/Dashboard
+          content: 'Este é o seu painel principal de estudos.' 
+        }
+      ]);
+    } else if (location.pathname === '/documents') {
+      setTourSteps([
+        { 
+          target: '.tour-upload-btn', // Adicione esta classe ao botão na DocumentsPage
+          content: 'Faça o upload dos seus PDFs por aqui.' 
+        }
+      ]);
+    } else if (location.pathname === '/profile') {
+      setTourSteps([
+        { 
+          target: '.pf-header__name', 
+          content: 'Aqui você gerencia o seu nome público e configurações de conta.' 
+        }
+      ]);
+    } else {
+      // Limpa os passos se a rota atual não tiver balões configurados
+      setTourSteps([]); 
+    }
+  }, [location.pathname]);
+
+  // 4. Salva no banco de dados quando o usuário pula ou finaliza
+  const handleJoyrideCallback = async (data) => {
+    const { status } = data;
+    
+    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
+      setRunTour(false);
+      
+      if (userId) {
+        try {
+          const session = await fetchAuthSession();
+          const token = session.tokens.idToken.toString();
+          
+          await fetch(`${API_BASE}/profile/${userId}`, {
+            method: 'PUT',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            // IMPORTANTE: O backend precisa suportar a atualização parcial (PATCH/PUT) deste campo
+            body: JSON.stringify({ tour_concluido: true }), 
+          });
+        } catch (error) {
+          console.error('Erro ao salvar conclusão do tour:', error);
+        }
+      }
+    }
+  };
+
   return (
     <div className={`dl-root${collapsed ? ' dl-root--collapsed' : ''}`}>
+      
+      {/* 5. Injeção do Componente Global */}
+      <Joyride
+        steps={tourSteps}
+        // O tour só roda se runTour for true E a página atual tiver passos configurados
+        run={runTour && tourSteps.length > 0} 
+        continuous={true}
+        showSkipButton={true}
+        callback={handleJoyrideCallback}
+        styles={{ 
+          options: { 
+            primaryColor: '#556b2f', // Verde Oliva
+            zIndex: 10000 
+          } 
+        }}
+      />
 
       {/* Overlay mobile (fecha ao clicar fora) */}
       {mobileOpen && (
