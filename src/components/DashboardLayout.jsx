@@ -21,9 +21,10 @@ export default function DashboardLayout() {
   const [runTour, setRunTour] = useState(false);
   const [tourSteps, setTourSteps] = useState([]);
   const [cognitoSub, setCognitoSub] = useState(null);
-  const [dbUserId, setDbUserId] = useState(null); // ID interno do banco de dados
+  const [dbUserId, setDbUserId] = useState(null);
+  const [perfilCache, setPerfilCache] = useState({}); // Armazena os dados do perfil para reutilizar no PUT
 
-  // 2. Busca o perfil e guarda o ID interno do banco
+  // 2. Busca o perfil, guarda o ID interno do banco e os dados para o body
   useEffect(() => {
     async function carregarStatusTour() {
       try {
@@ -42,7 +43,9 @@ export default function DashboardLayout() {
         if (!res.ok) return;
         const data = await res.json();
 
-        // Armazena o ID interno retornado pelo banco (ajuste a propriedade se o nome for id, id_usuario, etc.)
+        // Guarda os dados completos para enviar no PUT posteriormente
+        setPerfilCache(data);
+
         if (data.id || data.user_id) {
           setDbUserId(data.id || data.user_id);
         }
@@ -92,7 +95,7 @@ export default function DashboardLayout() {
     }
   }, [location.pathname]);
 
-  // 4. Salva no banco de dados usando o ID interno correto do banco na URL do PUT
+  // 4. Salva no banco de dados enviando o objeto completo exigido pelo PUT
   const handleJoyrideCallback = async (data) => {
     const { status } = data;
 
@@ -111,7 +114,11 @@ export default function DashboardLayout() {
               'X-User-Id': cognitoSub,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ tour_concluido: true }),
+            // Envia o perfil completo atualizado com a flag do tour
+            body: JSON.stringify({
+              ...perfilCache,
+              tour_concluido: true,
+            }),
           });
         } catch (error) {
           console.error('Erro ao salvar conclusão do tour:', error);
