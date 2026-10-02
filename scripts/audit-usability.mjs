@@ -94,12 +94,15 @@ function axeResults(outcome) {
   return result;
 }
 
-async function runAxe(url, chromePath, jsonPath) {
+async function runAxe(url, chromePath, jsonName) {
+  const jsonPath = path.join(outDir, jsonName);
   await execFileAsync(process.execPath, [
     axeBin,
     url,
     '--save',
-    jsonPath,
+    jsonName,
+    '--dir',
+    outDir,
     '--chrome-path',
     chromePath,
     '--chrome-options',
@@ -226,13 +229,13 @@ for (const route of routes) {
   const name = slug(route);
   const lighthouseFile = `lighthouse-${name}.html`;
   const axeFile = `axe-${name}.html`;
-  const axeJson = path.join(outDir, `axe-${name}.json`);
+  const axeJson = `axe-${name}.json`;
 
   console.log(`Auditando ${url}`);
   const accessibility = await runLighthouse(url, chromePath, path.join(outDir, lighthouseFile));
   const axe = await runAxe(url, chromePath, axeJson);
   await writeFile(path.join(outDir, axeFile), axeHtml(url, axe));
-  await rm(axeJson, { force: true });
+  await rm(path.join(outDir, axeJson), { force: true });
 
   summary.push({
     route,
