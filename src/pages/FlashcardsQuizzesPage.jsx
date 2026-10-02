@@ -4,6 +4,7 @@ import { fetchAuthSession } from 'aws-amplify/auth';
 import './FlashcardsQuizzesPage.css';
 import { API_BASE } from '../config';
 import StudyModal from '../components/StudyModal';
+import AIDisclaimerBanner from '../components/AIDisclaimerBanner';
 
 /* ─────────────────────────────────────────────
    ÍCONES
@@ -389,6 +390,8 @@ export default function FlashcardsQuizzesPage() {
           </button>
         </div>
       </header>
+
+      <AIDisclaimerBanner className="fq-ai-disclaimer" />
 
       {/* ── Tabs ── */}
       <div className="fq-tabs" role="tablist">

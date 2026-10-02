@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import ReactMarkdown from 'react-markdown';
+import AIDisclaimerBanner from '../components/AIDisclaimerBanner';
 import remarkGfm from 'remark-gfm';
 import './DocumentsPage.css';
 import { API_BASE } from '../config';
@@ -1193,6 +1194,7 @@ export default function DocumentsPage() {
           confirmDisabled={false}
           onConfirm={closeSummaryModal}
         >
+          <AIDisclaimerBanner className="dp-modal__ai-disclaimer" />
           {summaryResumoId && (
             <button
               className="dp-btn dp-btn--ghost dp-summary-download-btn"

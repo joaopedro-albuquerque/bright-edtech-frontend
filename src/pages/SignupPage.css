@@ -123,3 +123,28 @@
     gap: 1.1rem;
   }
 }
+
+.su-terms-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  color: var(--lp-text-muted, #6b7280);
+  cursor: pointer;
+  margin: 0.2rem 0 0.3rem;
+}
+
+.su-terms-check input[type="checkbox"] {
+  margin-top: 0.15rem;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.su-terms-check a {
+  color: var(--ov-blue, #4A90D9);
+  font-weight: 600;
+  text-decoration: underline;
+}
