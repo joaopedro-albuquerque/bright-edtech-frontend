@@ -5,6 +5,7 @@ import './SignupPage.css';
 import imageLogin from '../assets/ImageLogin.png';
 import logo from '../assets/Logo-Edtech.png';
 import { API_BASE, TERMOS_DE_USO_VERSAO } from '../config';
+import TermsModal from '../components/TermsModal';
 
 export default function SignUpPage() {
   const [firstName, setFirstName]   = useState('');
@@ -16,6 +17,7 @@ export default function SignUpPage() {
   const [cognitoId, setCognitoId] = useState('');
   const [cognitoConfirmed, setCognitoConfirmed] = useState(false);
   const [aceitouTermos, setAceitouTermos] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   // step 1 = formulário | step 2 = confirmação de e-mail
   const [step, setStep]         = useState(1);
@@ -278,9 +280,14 @@ export default function SignUpPage() {
                   required
                 />
                 <span>
-                  Li e aceito os <Link to="/termos" target="_blank" rel="noopener noreferrer">Termos de Uso e a Política de Privacidade (LGPD)</Link>
+                  Li e aceito os{' '}
+                  <button type="button" className="su-terms-check__link" onClick={() => setShowTermsModal(true)}>
+                    Termos de Uso e a Política de Privacidade (LGPD)
+                  </button>
                 </span>
               </label>
+
+              {showTermsModal && <TermsModal onClose={() => setShowTermsModal(false)} />}
 
               <button
                 type="submit"

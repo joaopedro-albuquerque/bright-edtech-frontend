@@ -1,0 +1,113 @@
+.tm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 21, 53, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1100;
+}
+
+.tm-modal {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 60px rgba(7, 13, 72, 0.3);
+  overflow: hidden;
+}
+
+.tm-modal__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(10, 21, 53, 0.06);
+}
+
+.tm-modal__title {
+  font-family: 'Syne', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--lp-text-dark, #0a1535);
+  margin: 0 0 0.2rem;
+}
+
+.tm-modal__version {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  color: var(--lp-text-muted, #6b7280);
+  margin: 0;
+}
+
+.tm-modal__close {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--lp-text-muted, #6b7280);
+  flex-shrink: 0;
+}
+
+.tm-modal__body {
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.tm-section {
+  margin-bottom: 1.4rem;
+}
+
+.tm-section h3 {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--lp-text-dark, #0a1535);
+  margin: 0 0 0.5rem;
+}
+
+.tm-section p {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: #374151;
+  margin: 0 0 0.6rem;
+}
+
+.tm-disclaimer {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--lp-text-muted, #6b7280);
+  border-top: 1px solid rgba(10, 21, 53, 0.08);
+  padding-top: 1rem;
+  margin: 1.5rem 0 0;
+}
+
+.tm-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid rgba(10, 21, 53, 0.06);
+}
+
+.tm-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.55rem 1.2rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.tm-btn--primary {
+  background: var(--ov-blue, #4A90D9);
+  color: #ffffff;
+}
