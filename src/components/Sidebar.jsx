@@ -73,6 +73,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
   const [loggingOut, setLoggingOut] = useState(false);
 
   const [userName, setUserName] = useState('Carregando...');
+  const [userLastName, setUserLastName] = useState('');
 
   useEffect(() => {
     async function fetchUserProfile() {
@@ -89,8 +90,8 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
 
         if (res.ok) {
           const data = await res.json();
-          // 3. Junta o nome e sobrenome e joga na tela
           setUserName(data.nome?.split(' ')[0] || 'Aluno');
+          setUserLastName(data.nome?.split(' ').slice(1).join(' ') || '');
         } else {
           setUserName('Aluno'); // Nome padrão caso a API falhe
         }
@@ -201,7 +202,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
           {!collapsed && (
             <div className="sidebar__profile-info">
               <span className="sidebar__profile-name">{userName}</span>
-              <span className="sidebar__profile-plan">Plano Pro</span>
+              <span className="sidebar__profile-plan">{userLastName}</span>
             </div>
           )}
           {!collapsed && (

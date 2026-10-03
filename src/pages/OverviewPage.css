@@ -160,19 +160,19 @@
 
 /* Variantes por cor */
 .ov-metric--blue {
-  background: linear-gradient(135deg, #f0f7ff 0%, #e0eefa 100%);
+  background: linear-gradient(145deg, #ffffff 0%, #f6faff 55%, #eaf3ff 100%);
   border-color: rgba(74, 144, 217, 0.2);
 }
 .ov-metric--blue:hover { border-color: var(--ov-blue); }
 
 .ov-metric--indigo {
-  background: linear-gradient(135deg, #f0f1fc 0%, #e4e7f8 100%);
+  background: linear-gradient(145deg, #ffffff 0%, #f7f8fe 55%, #eceffe 100%);
   border-color: rgba(92, 107, 192, 0.2);
 }
 .ov-metric--indigo:hover { border-color: var(--ov-indigo); }
 
 .ov-metric--violet {
-  background: linear-gradient(135deg, #f5f0ff 0%, #ede5fb 100%);
+  background: linear-gradient(145deg, #ffffff 0%, #faf8ff 55%, #f2ecff 100%);
   border-color: rgba(124, 58, 237, 0.18);
 }
 .ov-metric--violet:hover { border-color: var(--ov-violet); }
@@ -230,21 +230,21 @@
 /* Glow decorativo no canto inferior direito */
 .ov-metric__glow {
   position: absolute;
-  width: 100px;
-  height: 100px;
+  width: 160px;
+  height: 160px;
   border-radius: 50%;
-  bottom: -30px;
-  right: -20px;
+  bottom: -55px;
+  right: -45px;
   pointer-events: none;
-  opacity: 0.35;
+  opacity: 0.12;
   transition: opacity 0.2s;
 }
 
-.ov-metric--blue   .ov-metric__glow { background: radial-gradient(circle, var(--ov-blue)   0%, transparent 70%); }
-.ov-metric--indigo .ov-metric__glow { background: radial-gradient(circle, var(--ov-indigo) 0%, transparent 70%); }
-.ov-metric--violet .ov-metric__glow { background: radial-gradient(circle, var(--ov-violet) 0%, transparent 70%); }
+.ov-metric--blue   .ov-metric__glow { background: radial-gradient(circle, var(--ov-blue)   0%, transparent 65%); }
+.ov-metric--indigo .ov-metric__glow { background: radial-gradient(circle, var(--ov-indigo) 0%, transparent 65%); }
+.ov-metric--violet .ov-metric__glow { background: radial-gradient(circle, var(--ov-violet) 0%, transparent 65%); }
 
-.ov-metric:hover .ov-metric__glow { opacity: 0.55; }
+.ov-metric:hover .ov-metric__glow { opacity: 0.22; }
 
 /* ─────────────────────────────────────────
    GRID DE ATIVIDADE RECENTE
@@ -618,7 +618,13 @@
   padding: 0.4rem 0.85rem;
   cursor: pointer;
   white-space: nowrap;
-  transition: opacity 0.15s;
+  transition: background 0.18s, color 0.18s, transform 0.15s;
+}
+
+.ov-quick-resumo-item__btn:hover:not(:disabled) {
+  background: var(--ov-blue, #4A90D9);
+  color: #fff;
+  transform: translateY(-1px);
 }
 
 .ov-quick-resumo-item__btn:disabled {

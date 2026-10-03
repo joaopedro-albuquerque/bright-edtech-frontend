@@ -146,6 +146,7 @@ export default function DocumentsPage() {
 
   const [deleteTarget, setDeleteTarget] = useState(null);   // { id, nome }
 
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadFolderId, setUploadFolderId] = useState(null);
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadName, setUploadName] = useState('');
@@ -741,7 +742,10 @@ export default function DocumentsPage() {
       });
       if (!res.ok) throw new Error(`Erro ${res.status}: falha no upload.`);
       const novoArquivo = await res.json();
-      setFiles((prev) => [novoArquivo, ...prev]);
+      if (uploadFolderId === currentFolderId) {
+        setFiles((prev) => [novoArquivo, ...prev]);
+      }
+      setShowUploadModal(false);
       setUploadFolderId(null);
       setUploadFile(null);
       setUploadName('');
@@ -781,16 +785,14 @@ export default function DocumentsPage() {
         </div>
 
         <div className="dp-header__actions" data-tour="dp-header-actions">
-          {currentFolderId && (
-            <button
-              className="dp-btn dp-btn--upload"
-              data-tour="dp-upload"
-              onClick={() => setUploadFolderId(currentFolderId)}
-            >
-              {Icon.upload}
-              Enviar arquivo
-            </button>
-          )}
+          <button
+            className="dp-btn dp-btn--upload"
+            data-tour="dp-upload"
+            onClick={() => { setUploadFolderId(currentFolderId); setShowUploadModal(true); }}
+          >
+            {Icon.upload}
+            Enviar arquivo
+          </button>
           <button
             className="dp-btn dp-btn--primary"
             data-tour="dp-new-folder"
@@ -1105,15 +1107,32 @@ export default function DocumentsPage() {
       )}
 
       {/* Modal: Upload de arquivo */}
-      {uploadFolderId && (
+      {showUploadModal && (
         <Modal
           title="Enviar arquivo"
-          onClose={() => { setUploadFolderId(null); setUploadFile(null); setUploadName(''); }}
+          onClose={() => { setShowUploadModal(false); setUploadFolderId(null); setUploadFile(null); setUploadName(''); }}
           onConfirm={uploadDocument}
           confirmLabel="Enviar"
           isLoading={isUploading}
-          confirmDisabled={!uploadFile}
+          confirmDisabled={!uploadFile || !uploadFolderId}
         >
+          {/* Seletor de pasta — só aparece quando não há pasta selecionada */}
+          {!currentFolderId && (
+            <div className="dp-modal__field">
+              <label className="dp-modal__label" htmlFor="upload-folder">Pasta de destino</label>
+              <select
+                id="upload-folder"
+                className="dp-modal__input"
+                value={uploadFolderId || ''}
+                onChange={(e) => setUploadFolderId(e.target.value || null)}
+              >
+                <option value="">Selecione uma pasta...</option>
+                {folders.map((f) => (
+                  <option key={f.id} value={f.id}>{f.nome}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="dp-modal__field">
             <label className="dp-modal__label" htmlFor="upload-file">Arquivo</label>
             <label className="dp-upload-area" htmlFor="upload-file">

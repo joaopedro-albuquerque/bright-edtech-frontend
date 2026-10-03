@@ -394,7 +394,7 @@ export default function OverviewPage() {
                     onClick={() => { setQuickResumoTarget(doc); setQuickResumoFormat('cornell'); }}
                     disabled={isGenerating}
                   >
-                    {isGenerating ? 'Gerando...' : 'Gerar resumo'}
+                    {isGenerating ? 'Gerando...' : 'Gerar Resumo'}
                   </button>
                 </li>
               );

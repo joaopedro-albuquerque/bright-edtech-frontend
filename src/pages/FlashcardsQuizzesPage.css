@@ -622,7 +622,7 @@
 /* ══════════════════════════════════════════
    MODAL DE ESTUDO
 ══════════════════════════════════════════ */
-.fq-modal--study { max-width: 540px; }
+.fq-modal--study { max-width: 640px; }
 
 .fq-study__body {
   flex: 1;
@@ -641,7 +641,8 @@
 .fq-flashcard__inner {
   position: relative;
   width: 100%;
-  min-height: 180px;
+  display: grid;
+  min-height: 200px;
   transition: transform 0.45s;
   transform-style: preserve-3d;
 }
@@ -652,8 +653,8 @@
 
 .fq-flashcard__front,
 .fq-flashcard__back {
-  position: absolute;
-  inset: 0;
+  grid-column: 1;
+  grid-row: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -810,19 +811,26 @@
 /* ── Navegação do estudo ── */
 .fq-study__nav {
   display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem 1.4rem 1.4rem;
+  border-top: 1px solid rgba(10,21,53,0.08);
+}
+
+.fq-study__nav-row {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.65rem;
-  padding: 1rem 1.4rem 1.4rem;
-  border-top: 1px solid rgba(10,21,53,0.08);
 }
 
 /* ── Barra de avaliação SM-2 (flashcards) ── */
 .fq-rate-bar {
   display: flex;
   gap: 0.4rem;
-  flex: 1;
-  justify-content: flex-end;
+  flex: 0 0 auto;
+  width: 100%;
+  justify-content: center;
 }
 
 .fq-rate-btn {
@@ -977,8 +985,8 @@
   .fq-modal { max-width: 100%; }
   .fq-modal__footer { flex-wrap: wrap; }
 
-  .fq-study__nav { flex-wrap: wrap; }
-  .fq-rate-bar { width: 100%; justify-content: space-between; }
+  .fq-study__nav { gap: 0.4rem; }
+  .fq-rate-bar { justify-content: space-between; }
   .fq-rate-btn { flex: 1; padding: 0.55rem 0.4rem; font-size: 0.75rem; text-align: center; }
 
   .fq-modal__difficulty { flex-direction: column; align-items: flex-start; }

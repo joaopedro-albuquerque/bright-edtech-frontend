@@ -301,22 +301,23 @@ export default function StudyModal({ item, tipo, onClose }) {
 
             {!isLoading && !error && cards.length > 0 && (
               <div className="fq-study__nav">
-                <button className="fq-btn fq-btn--ghost" onClick={prevCard} disabled={cardIndex === 0}>
-                  {Icon.arrowLeft} Anterior
-                </button>
-                {isFlashcard && (
-                  <button className="fq-btn fq-btn--ghost" onClick={() => setFlipped(f => !f)}>
-                    {Icon.rotate} Virar
-                  </button>
-                )}
-                {isFlashcard && flipped ? (
+                {isFlashcard && flipped && (
                   <div className="fq-rate-bar">
                     <button className="fq-rate-btn fq-rate-btn--again" onClick={() => avaliarCartao(1)}>Errei</button>
                     <button className="fq-rate-btn fq-rate-btn--hard"  onClick={() => avaliarCartao(3)}>Difícil</button>
                     <button className="fq-rate-btn fq-rate-btn--good"  onClick={() => avaliarCartao(4)}>Bom</button>
                     <button className="fq-rate-btn fq-rate-btn--easy"  onClick={() => avaliarCartao(5)}>Fácil</button>
                   </div>
-                ) : (
+                )}
+                <div className="fq-study__nav-row">
+                  <button className="fq-btn fq-btn--ghost" onClick={prevCard} disabled={cardIndex === 0}>
+                    {Icon.arrowLeft} Anterior
+                  </button>
+                  {isFlashcard && (
+                    <button className="fq-btn fq-btn--ghost" onClick={() => setFlipped(f => !f)}>
+                      {Icon.rotate} Virar
+                    </button>
+                  )}
                   <button
                     className="fq-btn fq-btn--primary"
                     onClick={() => {
@@ -328,7 +329,7 @@ export default function StudyModal({ item, tipo, onClose }) {
                   >
                     {cardIndex < cards.length - 1 ? <>Próximo {Icon.arrowRight}</> : 'Concluir'}
                   </button>
-                )}
+                </div>
               </div>
             )}
           </>
