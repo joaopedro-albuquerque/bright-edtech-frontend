@@ -520,6 +520,12 @@
   color: var(--lp-text-muted, #6b7280);
 }
 
+.dp-modal__hint {
+  font-size: 0.82rem;
+  color: var(--lp-text-muted, #6b7280);
+  margin: 6px 0 0;
+}
+
 .dp-modal__input {
   height: 42px;
   background: #f7f9fc;
