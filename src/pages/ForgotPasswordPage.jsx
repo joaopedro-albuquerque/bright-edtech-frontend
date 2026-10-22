@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { resetPassword, confirmResetPassword } from 'aws-amplify/auth';
 import { useNavigate, Link } from 'react-router-dom';
+import './LoginPage.css';
 import './ForgotPasswordPage.css';
 import imageLogin from '../assets/ImageLogin.png';
 import logo from '../assets/Logo-Edtech.png';

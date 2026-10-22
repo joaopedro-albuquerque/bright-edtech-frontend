@@ -161,7 +161,7 @@
   letter-spacing: 0.02em;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .hero {
     padding: 7rem 1.25rem 5rem;
   }

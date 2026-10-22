@@ -1,6 +1,7 @@
 .feature {
   background: #f7f9fc;
   padding: 7rem 2rem;
+  overflow: hidden; /* os cards flutuantes da ilustração sangram pra fora do container */
 }
 
 .feature__container {
@@ -163,7 +164,7 @@
   to   { transform: translateY(-10px); }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 768px) {
   .feature__container {
     grid-template-columns: 1fr;
     gap: 3rem;

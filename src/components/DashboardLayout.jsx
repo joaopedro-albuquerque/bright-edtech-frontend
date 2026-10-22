@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import './DashboardLayout.css';
 
@@ -25,6 +25,8 @@ const TOUR_SEEN_STORAGE_KEY = 'brightedtech:tourSeenRoutes';
 const TOUR_COMPLETED_STORAGE_KEY = 'brightedtech:tourCompletedLocally';
 const TOUR_DOCS_CHAPTERS_KEY = 'brightedtech:tourDocsChapters';
 const DOCS_TOUR_UNLOCK_EVENT = 'brightedtech:docs-tour-unlock';
+/** Quanto esperar o conteúdo de /documents carregar antes de pular pra próxima rota do tour. */
+const DOCS_CONTENT_WAIT_MS = 4000;
 
 /** Capítulos progressivos de /documents (usuário novo desbloqueia ao criar). */
 const DOC_TOUR_CHAPTERS = ['create', 'folder', 'upload', 'file'];
@@ -43,6 +45,14 @@ const PAGE_READY_SELECTOR = {
 function isTargetPresent(target) {
   return target === 'body' || Boolean(document.querySelector(target));
 }
+
+/** Primeiro passo de /documents: o que dá pra fazer na página, com a conta vazia ou não. */
+const DOCS_INTRO_STEP = {
+  target: '[data-tour="dp-header-actions"]',
+  disableBeacon: true,
+  title: 'Seus documentos',
+  content: 'Aqui você organiza seus materiais em pastas e envia arquivos. A partir de cada documento, a IA gera resumos, flashcards e quizzes para você estudar.',
+};
 
 function getDocumentsChapterSteps(chapterId) {
   switch (chapterId) {
@@ -303,6 +313,13 @@ function saveLocalTourCompleted() {
   } catch { /* noop */ }
 }
 
+/** Próxima rota da sequência do tour, ou null se `pathname` for a última. */
+function getNextTourRoute(pathname) {
+  const i = TOUR_ROUTES.indexOf(pathname);
+  if (i === -1 || i === TOUR_ROUTES.length - 1) return null;
+  return TOUR_ROUTES[i + 1];
+}
+
 function clearLocalTourState() {
   try {
     sessionStorage.removeItem(TOUR_SEEN_STORAGE_KEY);
@@ -317,6 +334,7 @@ export default function DashboardLayout() {
 
   // Estados do Tour
   const location = useLocation();
+  const navigate = useNavigate();
   const [tourDone, setTourDone] = useState(true); // true = não sabemos ainda, então não mostra nada
   const [seenRoutes, setSeenRoutes] = useState(loadSeenRoutes);
   const [runTour, setRunTour] = useState(false);
@@ -333,6 +351,22 @@ export default function DashboardLayout() {
   const docsChapterRef = useRef(null);
   const docsChaptersRef = useRef(docsChapters);
   docsChaptersRef.current = docsChapters;
+  // Lembra se foi o próprio tour que abriu o drawer mobile (pra fechar de
+  // volta sozinho, sem mexer se o usuário tiver aberto o menu manualmente).
+  const mobileOpenedByTourRef = useRef(false);
+  // Refs pra o PUT final não depender de state (evita recriar callbacks que
+  // reiniciam o tour quando o perfil termina de carregar).
+  const perfilCacheRef = useRef(perfilCache);
+  perfilCacheRef.current = perfilCache;
+  const cognitoSubRef = useRef(cognitoSub);
+  cognitoSubRef.current = cognitoSub;
+  // Evita avançar/concluir duas vezes pro mesmo fim de rota (o Joyride e o
+  // efeito de passos podem sinalizar o fim quase juntos).
+  const endHandledForRef = useRef(null);
+  const docsFallbackTimerRef = useRef(null);
+  const docsWaitStartRef = useRef(null);
+  const tryStartDocumentsChapterRef = useRef(() => {});
+  const tourConcludedRef = useRef(false);
 
   // 1. Busca os dados iniciais do usuário e verifica se o tour já foi concluído
   useEffect(() => {
@@ -379,29 +413,82 @@ export default function DashboardLayout() {
     carregarStatusTour();
   }, []);
 
-  // 3. Marca a rota atual como concluída e, se todas as rotas do tour já
-  //    tiverem sido vistas, marca o tour inteiro como concluído.
-  const finalizarTourDaRota = useCallback(() => {
+  const resetarEstadoDoPasso = useCallback(() => {
     setRunTour(false);
     setTourSteps([]);
     setStepIndex(0);
     setActiveDocsChapter(null);
     docsChapterRef.current = null;
-    setSeenRoutes((prev) => {
-      const rotasVistas = new Set(prev).add(location.pathname);
+    if (mobileOpenedByTourRef.current) {
+      setMobileOpen(false);
+      mobileOpenedByTourRef.current = false;
+    }
+  }, []);
 
-      const faltaAlgumaRota = TOUR_ROUTES.some((rota) => !rotasVistas.has(rota));
-      if (!faltaAlgumaRota) {
-        setTourDone(true);
-        try {
-          sessionStorage.removeItem(TOUR_SEEN_STORAGE_KEY);
-        } catch { /* noop */ }
-        saveLocalTourCompleted();
+  // 3a. Conclui o tour inteiro (último passo da última rota, "Pular" ou "Fechar")
+  //     e persiste tour_concluido no backend via PUT /profile/{id}.
+  const concluirTour = useCallback(async () => {
+    if (tourConcludedRef.current) return;
+    tourConcludedRef.current = true;
+
+    resetarEstadoDoPasso();
+    setTourDone(true);
+    try {
+      sessionStorage.removeItem(TOUR_SEEN_STORAGE_KEY);
+    } catch { /* noop */ }
+    saveLocalTourCompleted();
+
+    const perfil = perfilCacheRef.current;
+    if (!perfil || !perfil.id) return;
+    try {
+      const session = await fetchAuthSession();
+      const token   = session.tokens.idToken.toString();
+
+      const payloadAtualizado = {
+        email: perfil.email || '',
+        nome: perfil.nome || null,
+        estilo_preferido: perfil.estilo_preferido || null,
+        formato_preferido: perfil.formato_preferido || null,
+        objetivos_estudo: perfil.objetivos_estudo || null,
+        cognito_id: perfil.cognito_id || cognitoSubRef.current,
+        tour_concluido: true,
+      };
+
+      const res = await fetch(`${API_BASE}/profile/${perfil.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'X-User-Id': perfil.id,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payloadAtualizado),
+      });
+
+      if (!res.ok) {
+        const err = await res.text();
+        console.error('Falha ao salvar conclusão do tour:', res.status, err);
       }
+    } catch (error) {
+      console.error('Erro ao enviar requisição do tour:', error);
+    }
+  }, [resetarEstadoDoPasso]);
 
-      return rotasVistas;
-    });
-  }, [location.pathname]);
+  // 3b. Fim do mini-tour da rota atual: marca como vista e segue pra próxima
+  //     rota da sequência. Só conclui o tour de verdade na última rota.
+  const finalizarTourDaRota = useCallback(() => {
+    if (endHandledForRef.current === location.pathname) return;
+    endHandledForRef.current = location.pathname;
+
+    resetarEstadoDoPasso();
+    setSeenRoutes((prev) => new Set(prev).add(location.pathname));
+
+    const proxima = getNextTourRoute(location.pathname);
+    if (proxima) {
+      navigate(proxima);
+    } else {
+      concluirTour();
+    }
+  }, [location.pathname, navigate, resetarEstadoDoPasso, concluirTour]);
 
   const documentsRouteComplete = allDocsChaptersDone(docsChapters)
     || seenRoutes.has('/documents');
@@ -422,21 +509,47 @@ export default function DashboardLayout() {
         return;
       }
     }
+    // No tour integrado não dá pra ficar esperando o usuário desbloquear mais
+    // capítulos: se a página ainda está carregando o conteúdo (o evento de
+    // unlock chama esta função de novo), damos um prazo e depois seguimos
+    // pra próxima rota.
     if (!id) {
-      setRunTour(false);
-      setTourSteps([]);
-      setStepIndex(0);
+      if (docsWaitStartRef.current === null) docsWaitStartRef.current = Date.now();
+      if (Date.now() - docsWaitStartRef.current >= DOCS_CONTENT_WAIT_MS) {
+        docsWaitStartRef.current = null;
+        // Sem capítulo aplicável: mostra só a visão geral da página.
+        const introSteps = filterAvailableSteps([DOCS_INTRO_STEP]);
+        if (introSteps.length === 0) {
+          finalizarTourDaRota();
+          return;
+        }
+        setTourSteps(introSteps);
+        setStepIndex(0);
+        return;
+      }
+      if (!docsFallbackTimerRef.current) {
+        docsFallbackTimerRef.current = setTimeout(() => {
+          docsFallbackTimerRef.current = null;
+          tryStartDocumentsChapterRef.current();
+        }, 300);
+      }
       return;
     }
+    docsWaitStartRef.current = null;
 
-    const steps = filterAvailableSteps(getDocumentsChapterSteps(id));
-    if (steps.length === 0) return;
+    // Visão geral da página primeiro, depois o capítulo que cabe no momento.
+    const steps = filterAvailableSteps([DOCS_INTRO_STEP, ...getDocumentsChapterSteps(id)]);
+    if (steps.length === 0) {
+      finalizarTourDaRota();
+      return;
+    }
 
     docsChapterRef.current = id;
     setActiveDocsChapter(id);
     setTourSteps(steps);
     setStepIndex(0);
   }, [tourDone, location.pathname, seenRoutes, finalizarTourDaRota]);
+  tryStartDocumentsChapterRef.current = tryStartDocumentsChapter;
 
   const finalizarCapituloDocumentos = useCallback(() => {
     const chapterId = docsChapterRef.current || activeDocsChapter;
@@ -446,21 +559,16 @@ export default function DashboardLayout() {
     docsChapterRef.current = null;
     setActiveDocsChapter(null);
 
-    if (!chapterId) return;
-
-    setDocsChapters((prev) => {
-      const next = new Set(prev).add(chapterId);
+    if (chapterId) {
+      const next = new Set(docsChaptersRef.current).add(chapterId);
       docsChaptersRef.current = next;
+      setDocsChapters(next);
       saveDocsChapters(next);
-      if (allDocsChaptersDone(next)) {
-        queueMicrotask(() => finalizarTourDaRota());
-      } else {
-        // Se o DOM já desbloqueou o próximo (ex.: pasta criada durante o capítulo), inicia já.
-        queueMicrotask(() => tryStartDocumentsChapter());
-      }
-      return next;
-    });
-  }, [activeDocsChapter, finalizarTourDaRota, tryStartDocumentsChapter]);
+    }
+
+    // Tour integrado: terminou o capítulo de documentos, vai pra próxima rota.
+    finalizarTourDaRota();
+  }, [activeDocsChapter, finalizarTourDaRota]);
 
   // 2. Espera a página ficar pronta e monta os passos (ou o capítulo de docs).
   useEffect(() => {
@@ -469,11 +577,20 @@ export default function DashboardLayout() {
     setStepIndex(0);
     docsChapterRef.current = null;
     setActiveDocsChapter(null);
+    if (docsFallbackTimerRef.current) {
+      clearTimeout(docsFallbackTimerRef.current);
+      docsFallbackTimerRef.current = null;
+    }
+    docsWaitStartRef.current = null;
 
     if (tourDone) return undefined;
 
     if (location.pathname === '/documents') {
-      if (documentsRouteComplete) return undefined;
+      if (documentsRouteComplete) {
+        // Capítulos já vistos em outra visita: não há o que mostrar, segue o fluxo.
+        if (!seenRoutes.has('/documents')) finalizarTourDaRota();
+        return undefined;
+      }
 
       let cancelled = false;
       let observer = null;
@@ -640,6 +757,12 @@ export default function DashboardLayout() {
     setRunTour(false);
     const isSidebarStep = typeof step.target === 'string'
       && (step.target.includes('sidebar') || step.target.includes('data-tour="sidebar'));
+    // No mobile a sidebar é um drawer escondido fora da tela -- sem abrir
+    // ela antes, o passo tentaria apontar pra um elemento invisível.
+    if (isSidebarStep && typeof window !== 'undefined' && window.innerWidth <= 768 && !mobileOpen) {
+      mobileOpenedByTourRef.current = true;
+      setMobileOpen(true);
+    }
     const delay = stepIndex === 0 ? 500 : (isSidebarStep ? 180 : 80);
     let raf1 = 0;
     let raf2 = 0;
@@ -675,6 +798,12 @@ export default function DashboardLayout() {
   const handleJoyrideCallback = async (data) => {
     const { status, type, action, index } = data;
 
+    // "Fechar" (X) no card: encerra e marca o tour inteiro como concluído.
+    if (type === EVENTS.STEP_AFTER && action === ACTIONS.CLOSE) {
+      concluirTour();
+      return;
+    }
+
     if (type === EVENTS.STEP_AFTER) {
       setRunTour(false);
       setStepIndex(index + (action === ACTIONS.PREV ? -1 : 1));
@@ -687,48 +816,23 @@ export default function DashboardLayout() {
       return;
     }
 
-    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
+    // "Pular": encerra e marca o tour inteiro como concluído.
+    if (status === STATUS.SKIPPED) {
+      concluirTour();
+      return;
+    }
+
+    // Último passo da rota: segue pra próxima (ou conclui na última rota).
+    if (status === STATUS.FINISHED) {
       if (location.pathname === '/documents') {
         finalizarCapituloDocumentos();
       } else {
         finalizarTourDaRota();
       }
-
-      // Persiste a conclusão do tour no backend via PUT /profile/{id}.
-      if (!perfilCache.id) return;
-      try {
-        const session = await fetchAuthSession();
-        const token   = session.tokens.idToken.toString();
-
-        const payloadAtualizado = {
-          email: perfilCache.email || '',
-          nome: perfilCache.nome || null,
-          estilo_preferido: perfilCache.estilo_preferido || null,
-          formato_preferido: perfilCache.formato_preferido || null,
-          objetivos_estudo: perfilCache.objetivos_estudo || null,
-          cognito_id: perfilCache.cognito_id || cognitoSub,
-          tour_concluido: true,
-        };
-
-        const res = await fetch(`${API_BASE}/profile/${perfilCache.id}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'X-User-Id': perfilCache.id,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payloadAtualizado),
-        });
-
-        if (!res.ok) {
-          const err = await res.text();
-          console.error('Falha ao salvar conclusão do tour:', res.status, err);
-        }
-      } catch (error) {
-        console.error('Erro ao enviar requisição do tour:', error);
-      }
     }
   };
+
+  const isLastTourRoute = getNextTourRoute(location.pathname) === null;
 
   return (
     <div className={`dl-root${collapsed ? ' dl-root--collapsed' : ''}`}>
@@ -752,7 +856,8 @@ export default function DashboardLayout() {
         locale={{
           back: 'Voltar',
           close: 'Fechar',
-          last: 'Concluir',
+          // Só a última rota do tour "conclui"; nas outras o botão leva à próxima página.
+          last: isLastTourRoute ? 'Concluir' : 'Próximo',
           next: 'Próximo',
           skip: 'Pular',
         }}
