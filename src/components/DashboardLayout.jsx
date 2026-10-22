@@ -113,6 +113,14 @@ function getDocumentsChapterSteps(chapterId) {
   }
 }
 
+// No celular o menu lateral é uma gaveta alta e estreita: cartão ao lado ('right')
+// sai da tela. O passo do menu fica centralizado e o do perfil (rodapé) vai acima.
+function adaptStepForMobile(step) {
+  if (step.target === '.sidebar__nav') return { ...step, placement: 'center' };
+  if (step.target === '[data-tour="sidebar-profile"]') return { ...step, placement: 'top' };
+  return step;
+}
+
 function getStepsForRoute(pathname) {
   switch (pathname) {
     case '/dashboard':
@@ -846,7 +854,7 @@ export default function DashboardLayout() {
   return (
     <div className={`dl-root${collapsed ? ' dl-root--collapsed' : ''}`}>
       <Joyride
-        steps={tourSteps}
+        steps={isMobile ? tourSteps.map(adaptStepForMobile) : tourSteps}
         stepIndex={stepIndex}
         run={runTour && tourSteps.length > 0}
         continuous={true}
@@ -861,6 +869,7 @@ export default function DashboardLayout() {
           // cima da área destacada e só faz um fade-in (ver .react-joyride__tooltip
           // em DashboardLayout.css).
           disableAnimation: true,
+          options: { preventOverflow: { boundariesElement: 'viewport', padding: 8 } },
         }}
         locale={{
           back: 'Voltar',

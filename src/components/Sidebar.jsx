@@ -194,7 +194,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
           className={`sidebar__profile${collapsed ? ' sidebar__profile--collapsed' : ''}`}
           data-tour="sidebar-profile"
           title={collapsed ? userName : undefined}
-          onClick={() => navigate('/profile')}
+          onClick={() => { navigate('/profile'); onCloseMobile?.(); }}
           style={{ cursor: 'pointer' }}>
           <div className="sidebar__avatar">
             {icons.user}
