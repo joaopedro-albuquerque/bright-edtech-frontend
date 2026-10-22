@@ -465,7 +465,7 @@
 /* ─────────────────────────────────────────
    RESPONSIVIDADE
 ───────────────────────────────────────── */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .pf-form__row { grid-template-columns: 1fr; }
   .pf-danger-item { flex-direction: column; align-items: flex-start; }
   .pf-btn--danger { width: 100%; justify-content: center; }

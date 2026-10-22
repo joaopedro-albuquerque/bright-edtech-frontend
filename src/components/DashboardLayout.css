@@ -1,5 +1,13 @@
 /* =====================================================
    DashboardLayout.css — Bright EdTech
+
+   Convenção de breakpoints usada em todo o app (CSS puro, sem
+   var() dentro de @media — valores literais, mesma escala em
+   todos os arquivos):
+     480px  — celular pequeno (coluna única, esconde secundário)
+     640px  — celular grande / phablet (filas apertadas)
+     768px  — tablet (sidebar vira drawer, 2 col. empilha, 3 col. colapsa)
+     1024px — tablet paisagem / desktop pequeno (3 col. -> 2 col.)
    ===================================================== */
 
 .dl-root {
@@ -11,7 +19,7 @@
 /* Empurra o conteúdo para a direita conforme a largura do sidebar */
 .dl-main {
   flex: 1;
-  margin-left: 240px; /* var(--sb-width) */
+  margin-left: 280px; /* var(--sb-width), ver Sidebar.css */
   transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
@@ -127,5 +135,14 @@
 
   .dl-content {
     padding: 1.5rem 1.25rem;
+  }
+}
+
+/* Tooltip do tour (react-joyride) sem limite de largura por padrão —
+   em celulares pequenos ele pode ficar mais largo que a viewport. */
+@media (max-width: 480px) {
+  .react-joyride__tooltip {
+    width: calc(100vw - 32px) !important;
+    max-width: 320px;
   }
 }

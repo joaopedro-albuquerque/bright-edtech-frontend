@@ -736,6 +736,8 @@
   color: var(--lp-text-dark, #0a1535);
   cursor: pointer;
   text-align: left;
+  overflow-wrap: break-word;
+  word-break: break-word;
   transition: border-color 0.15s, background 0.15s;
 }
 
@@ -975,6 +977,8 @@
   .fq-header__actions { width: 100%; }
   .fq-header__actions .fq-btn { flex: 1; justify-content: center; }
   .fq-review-alert { width: 100%; justify-content: center; }
+  .fq-item { flex-wrap: wrap; }
+  .fq-item__right { flex-wrap: wrap; justify-content: flex-end; }
 }
 
 @media (max-width: 480px) {

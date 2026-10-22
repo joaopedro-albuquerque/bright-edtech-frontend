@@ -854,6 +854,9 @@
 }
 
 .dp-modal__summary--markdown table {
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
   width: 100%;
   border-collapse: collapse;
   margin: 0 0 1em;
@@ -926,6 +929,7 @@
 @media (max-width: 480px) {
   .dp-grid { grid-template-columns: 1fr 1fr; }
   .dp-modal { border-radius: 12px; }
+  .dp-content-list__item { flex-wrap: wrap; }
 }
 
 /* ── Modal: listagem de resumos/flashcards/quizzes por documento ── */

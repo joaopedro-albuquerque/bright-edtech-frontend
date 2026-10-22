@@ -333,6 +333,9 @@ export default function DashboardLayout() {
   const docsChapterRef = useRef(null);
   const docsChaptersRef = useRef(docsChapters);
   docsChaptersRef.current = docsChapters;
+  // Lembra se foi o próprio tour que abriu o drawer mobile (pra fechar de
+  // volta sozinho, sem mexer se o usuário tiver aberto o menu manualmente).
+  const mobileOpenedByTourRef = useRef(false);
 
   // 1. Busca os dados iniciais do usuário e verifica se o tour já foi concluído
   useEffect(() => {
@@ -387,6 +390,10 @@ export default function DashboardLayout() {
     setStepIndex(0);
     setActiveDocsChapter(null);
     docsChapterRef.current = null;
+    if (mobileOpenedByTourRef.current) {
+      setMobileOpen(false);
+      mobileOpenedByTourRef.current = false;
+    }
     setSeenRoutes((prev) => {
       const rotasVistas = new Set(prev).add(location.pathname);
 
@@ -640,6 +647,12 @@ export default function DashboardLayout() {
     setRunTour(false);
     const isSidebarStep = typeof step.target === 'string'
       && (step.target.includes('sidebar') || step.target.includes('data-tour="sidebar'));
+    // No mobile a sidebar é um drawer escondido fora da tela -- sem abrir
+    // ela antes, o passo tentaria apontar pra um elemento invisível.
+    if (isSidebarStep && typeof window !== 'undefined' && window.innerWidth <= 768 && !mobileOpen) {
+      mobileOpenedByTourRef.current = true;
+      setMobileOpen(true);
+    }
     const delay = stepIndex === 0 ? 500 : (isSidebarStep ? 180 : 80);
     let raf1 = 0;
     let raf2 = 0;
