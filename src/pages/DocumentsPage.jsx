@@ -841,10 +841,11 @@ export default function DocumentsPage() {
 
       {/* ── Feedback de erro ── */}
       {error && (
-        <div className="dp-error" role="alert">
-          <span>⚠ {error}</span>
-          <button onClick={() => setError(null)} aria-label="Fechar erro">✕</button>
-        </div>
+        <AlertModal
+          title="Não foi possível concluir a ação"
+          message={error}
+          onClose={() => setError(null)}
+        />
       )}
 
       {/* ── Estado de carregamento ── */}

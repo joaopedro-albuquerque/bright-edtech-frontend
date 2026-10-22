@@ -5,6 +5,7 @@ import './FlashcardsQuizzesPage.css';
 import { API_BASE } from '../config';
 import StudyModal from '../components/StudyModal';
 import AIDisclaimerBanner from '../components/AIDisclaimerBanner';
+import AlertModal from '../components/AlertModal';
 
 /* ─────────────────────────────────────────────
    ÍCONES
@@ -159,6 +160,7 @@ export default function FlashcardsQuizzesPage() {
   const [selectedDocId,  setSelectedDocId]  = useState(null);
   const [isCreating,     setIsCreating]     = useState(false);
   const [modalError,     setModalError]     = useState('');
+  const [actionError,    setActionError]    = useState(null);
   const [selectedDificuldade, setSelectedDificuldade] = useState('medio');
 
   // ── Modal de estudo ──
@@ -348,7 +350,7 @@ export default function FlashcardsQuizzesPage() {
       }
       setDeleteTarget(null);
     } catch (err) {
-      setError(err.message);
+      setActionError(err.message);
     } finally {
       setIsDeleting(false);
     }
@@ -610,6 +612,14 @@ export default function FlashcardsQuizzesPage() {
       {/* ══════════════════════════════════════════
           MODAL — Confirmar exclusão
       ══════════════════════════════════════════ */}
+      {actionError && (
+        <AlertModal
+          title="Não foi possível excluir"
+          message={actionError}
+          onClose={() => setActionError(null)}
+        />
+      )}
+
       {deleteTarget && (
         <div className="fq-overlay" onClick={() => !isDeleting && setDeleteTarget(null)} role="dialog" aria-modal="true">
           <div className="fq-modal" onClick={e => e.stopPropagation()}>

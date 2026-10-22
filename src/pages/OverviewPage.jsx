@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm';
 import QuickUploadModal from '../components/QuickUploadModal';
 import StudyModal from '../components/StudyModal';
 import Modal from '../components/Modal';
+import AlertModal from '../components/AlertModal';
 import './OverviewPage.css';
 import { API_BASE } from '../config';
 import { RESUMO_FORMATOS } from '../constants/resumoFormatos';
@@ -114,6 +115,7 @@ export default function OverviewPage() {
   const [dbUserId,      setDbUserId]      = useState(null);
   const [isLoading,     setIsLoading]     = useState(true);
   const [error,         setError]         = useState(null);
+  const [actionError,   setActionError]   = useState(null);
 
   // ── Atalho "gerar resumo" a partir dos documentos recentes ──
   const [generatingDocId, setGeneratingDocId] = useState(null);
@@ -146,7 +148,7 @@ export default function OverviewPage() {
       setSummaryResumoId(item.id);
       setShowSummaryModal(true);
     } catch (err) {
-      setError(err.message);
+      setActionError(err.message);
     } finally {
       setIsOpeningResumoId(null);
     }
@@ -169,7 +171,7 @@ export default function OverviewPage() {
       const data = await res.json();
       if (data.url) window.open(data.url, '_blank');
     } catch (err) {
-      setError(err.message);
+      setActionError(err.message);
     } finally {
       setIsDownloadingPdf(false);
     }
@@ -315,6 +317,14 @@ export default function OverviewPage() {
   ═══════════════════════════════════════════ */
   return (
     <div className="ov-root">
+
+      {actionError && (
+        <AlertModal
+          title="Não foi possível concluir a ação"
+          message={actionError}
+          onClose={() => setActionError(null)}
+        />
+      )}
 
       {/* ── Cabeçalho de boas-vindas ── */}
       <header className="ov-header tour-boas-vindas">

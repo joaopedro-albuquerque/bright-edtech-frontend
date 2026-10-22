@@ -26,6 +26,7 @@
   top: 0;
   left: 0;
   height: 100vh;
+  height: 100dvh;
   width: var(--sb-width);
   background: var(--sb-bg);
   display: flex;
@@ -149,6 +150,7 @@
 /* ── Navegação ── */
 .sidebar__nav {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 0.75rem 0;

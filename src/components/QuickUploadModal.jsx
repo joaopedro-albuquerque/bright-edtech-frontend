@@ -32,7 +32,6 @@ export default function QuickUploadModal({ dbUserId, onClose, onUploaded }) {
   const [file, setFile] = useState(null);
   const [docName, setDocName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
   const [uploadAlert, setUploadAlert] = useState(null);
 
   useEffect(() => {
@@ -47,7 +46,7 @@ export default function QuickUploadModal({ dbUserId, onClose, onUploaded }) {
         const data = await res.json();
         setFolders(Array.isArray(data) ? data : []);
       } catch (err) {
-        setError(err.message);
+        setUploadAlert({ title: 'Não foi possível carregar as pastas', message: err.message });
       } finally {
         setIsLoadingFolders(false);
       }
@@ -62,7 +61,6 @@ export default function QuickUploadModal({ dbUserId, onClose, onUploaded }) {
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setIsSubmitting(true);
-    setError('');
     try {
       const { token } = await getAuthHeaders();
       let pastaId = selectedFolderId;
@@ -117,7 +115,6 @@ export default function QuickUploadModal({ dbUserId, onClose, onUploaded }) {
         </div>
 
         <div className="qu-modal__body">
-          {error && <p className="qu-modal__error">{error}</p>}
 
           <div className="qu-field">
             <label className="qu-field__label" htmlFor="qu-folder">Pasta de destino</label>
@@ -168,12 +165,11 @@ export default function QuickUploadModal({ dbUserId, onClose, onUploaded }) {
                   if (!f) return;
                   const validationError = validatePdfFile(f);
                   if (validationError) {
-                    setError(validationError);
+                    setUploadAlert({ title: 'Arquivo inválido', message: validationError });
                     setFile(null);
                     e.target.value = '';
                     return;
                   }
-                  setError('');
                   setFile(f);
                   if (!docName) setDocName(f.name);
                 }}
