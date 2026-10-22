@@ -776,11 +776,17 @@ export default function DashboardLayout() {
       && (step.target.includes('sidebar') || step.target.includes('data-tour="sidebar'));
     // No mobile a sidebar é um drawer escondido fora da tela -- sem abrir
     // ela antes, o passo tentaria apontar pra um elemento invisível.
+    // Também espera a gaveta terminar de deslizar (0.28s) antes de mostrar o
+    // passo, senão o recorte e o cartão são medidos com o menu ainda a meio caminho.
+    let drawerOpening = false;
+    // Menu é fixo na tela: com a página rolada, o recorte do tour sai deslocado.
+    if (isSidebarStep && typeof window !== 'undefined') window.scrollTo(0, 0);
     if (isSidebarStep && typeof window !== 'undefined' && window.innerWidth <= 768 && !mobileOpen) {
       mobileOpenedByTourRef.current = true;
+      drawerOpening = true;
       setMobileOpen(true);
     }
-    const delay = stepIndex === 0 ? 500 : (isSidebarStep ? 180 : 80);
+    const delay = stepIndex === 0 ? 500 : (drawerOpening ? 450 : (isSidebarStep ? 180 : 80));
     let raf1 = 0;
     let raf2 = 0;
     const timer = setTimeout(() => {
