@@ -183,7 +183,9 @@ export default function ProfilePage() {
           'X-User-Id': dbUserId,
         },
       });
-      if (!res.ok) throw new Error(`Erro ${res.status}: falha ao excluir conta no servidor.`);
+      // 404 = perfil já removido numa tentativa anterior (ex.: o passo 2 falhou):
+      // segue para apagar o login em vez de deixar a conta pela metade.
+      if (!res.ok && res.status !== 404) throw new Error(`Erro ${res.status}: falha ao excluir conta no servidor.`);
 
       // 2. Remove do Cognito
       await deleteUser();
