@@ -276,6 +276,13 @@
   gap: 0.75rem;
 }
 
+/* Celular: folga extra embaixo para a barra do navegador não cobrir o perfil/sair. */
+@media (max-width: 768px) {
+  .sidebar__footer {
+    padding-bottom: calc(2.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 .sidebar__profile {
   display: flex;
   align-items: center;
