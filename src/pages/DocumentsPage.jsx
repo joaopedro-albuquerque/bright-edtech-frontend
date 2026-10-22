@@ -744,7 +744,7 @@ export default function DocumentsPage() {
       });
       if (!res.ok) {
         const corpoErro = await res.json().catch(() => null);
-        throw new Error(corpoErro?.detail || `Erro ${res.status}: falha no upload.`);
+        throw new Error(corpoErro?.errors?.[0]?.message || corpoErro?.detail || `Erro ${res.status}: falha no upload.`);
       }
       const novoArquivo = await res.json();
       if (uploadFolderId === currentFolderId) {

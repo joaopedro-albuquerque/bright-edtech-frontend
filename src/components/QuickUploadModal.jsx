@@ -91,7 +91,7 @@ export default function QuickUploadModal({ dbUserId, onClose, onUploaded }) {
       });
       if (!uploadRes.ok) {
         const corpoErro = await uploadRes.json().catch(() => null);
-        throw new Error(corpoErro?.detail || 'Não foi possível enviar o documento.');
+        throw new Error(corpoErro?.errors?.[0]?.message || corpoErro?.detail || 'Não foi possível enviar o documento.');
       }
       const documento = await uploadRes.json();
 
