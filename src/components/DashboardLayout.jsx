@@ -331,6 +331,15 @@ function clearLocalTourState() {
 export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    const onChange = (e) => setIsMobile(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   // Estados do Tour
   const location = useLocation();
@@ -931,8 +940,8 @@ export default function DashboardLayout() {
       />
       {mobileOpen && <div className="dl-overlay" onClick={() => setMobileOpen(false)} aria-hidden="true" />}
       <Sidebar
-        collapsed={collapsed}
-        onToggle={() => setCollapsed((v) => !v)}
+        collapsed={collapsed && !isMobile}
+        onToggle={() => (isMobile ? setMobileOpen(false) : setCollapsed((v) => !v))}
         mobileOpen={mobileOpen}
         onCloseMobile={() => setMobileOpen(false)}
       />

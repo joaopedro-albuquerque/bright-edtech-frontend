@@ -388,54 +388,74 @@
    RESPONSIVIDADE
    ===================================================== */
 
-/* Tablet: empilha verticalmente */
+/* Tablet/celular: empilha, a página inteira rola junto e o bloco da marca vira
+   um cabeçalho compacto que se encaixa no formulário. */
 @media (max-width: 768px) {
   .lp-root {
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: visible;
   }
 
   .lp-brand {
-    min-height: 260px;
-    padding: 2rem 2rem 0;
+    min-height: 0;
+    padding: 1.5rem 1.5rem 2.75rem;
     align-items: center;
   }
 
   .lp-brand__tagline {
     text-align: center;
+    margin-top: 1rem;
+    font-size: 1rem;
   }
 
   .lp-brand__illustration {
     position: relative;
-    top: auto;
-    left: auto;
-    transform: none;
-    width: 55%;
-    margin: 1.5rem auto 0;
-    animation: illustrationFloat 6s ease-in-out infinite alternate;
+    inset: auto;
+    width: auto;
+    margin: 0.75rem auto 0;
+    animation: none;
+  }
+
+  .lp-brand__illustration-img {
+    width: auto;
+    max-width: 55%;
+    max-height: 110px;
+    animation: none;
   }
 
   .lp-form-col {
-    padding: 2.5rem 1.5rem 3rem;
+    position: relative;
+    z-index: 1;
+    margin-top: -1.75rem;
+    border-radius: 24px 24px 0 0;
+    overflow: visible;
+    padding: 2rem 1.5rem 3rem;
   }
 }
 
 /* Mobile */
 @media (max-width: 480px) {
   .lp-brand {
-    padding: 1.75rem 1.25rem 0;
-    min-height: 220px;
+    padding: 1.25rem 1.25rem 2.5rem;
   }
 
-  .lp-brand__illustration {
-    width: 70%;
+  .lp-brand__illustration-img {
+    max-height: 84px;
   }
 
   .lp-form-col {
-    padding: 2rem 1.25rem 3rem;
+    padding: 1.75rem 1.25rem 2.5rem;
   }
 
   .lp-form-card__title {
     font-size: 1.7rem;
+  }
+
+  .lp-form-card__subtitle {
+    margin-bottom: 1.75rem;
   }
 }
