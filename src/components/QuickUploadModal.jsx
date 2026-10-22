@@ -3,6 +3,8 @@ import { fetchAuthSession } from 'aws-amplify/auth';
 import './QuickUploadModal.css';
 import { API_BASE } from '../config';
 import { validatePdfFile } from '../utils/pdfValidation';
+import { uploadErrorFrom, getUploadErrorTitle } from '../utils/uploadErrors';
+import AlertModal from './AlertModal';
 
 const NEW_FOLDER_VALUE = '__new__';
 
@@ -31,6 +33,7 @@ export default function QuickUploadModal({ dbUserId, onClose, onUploaded }) {
   const [docName, setDocName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [uploadAlert, setUploadAlert] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -91,20 +94,21 @@ export default function QuickUploadModal({ dbUserId, onClose, onUploaded }) {
       });
       if (!uploadRes.ok) {
         const corpoErro = await uploadRes.json().catch(() => null);
-        throw new Error(corpoErro?.errors?.[0]?.message || corpoErro?.detail || 'Não foi possível enviar o documento.');
+        throw uploadErrorFrom(corpoErro, 'Não foi possível enviar o documento.');
       }
       const documento = await uploadRes.json();
 
       onUploaded?.(documento);
       onClose();
     } catch (err) {
-      setError(err.message);
+      setUploadAlert({ title: err.title || getUploadErrorTitle(), message: err.message });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
+    <>
     <div className="qu-overlay" role="dialog" aria-modal="true" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="qu-modal">
         <div className="qu-modal__header">
@@ -203,5 +207,13 @@ export default function QuickUploadModal({ dbUserId, onClose, onUploaded }) {
         </div>
       </div>
     </div>
+    {uploadAlert && (
+      <AlertModal
+        title={uploadAlert.title}
+        message={uploadAlert.message}
+        onClose={() => setUploadAlert(null)}
+      />
+    )}
+    </>
   );
 }

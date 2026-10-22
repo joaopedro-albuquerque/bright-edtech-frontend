@@ -9,6 +9,8 @@ import StudyModal from '../components/StudyModal';
 import Modal from '../components/Modal';
 import { RESUMO_FORMATOS } from '../constants/resumoFormatos';
 import { validatePdfFile } from '../utils/pdfValidation';
+import { uploadErrorFrom, getUploadErrorTitle } from '../utils/uploadErrors';
+import AlertModal from '../components/AlertModal';
 
 /* ─────────────────────────────────────────────
    ÍCONES SVG INLINE
@@ -153,6 +155,7 @@ export default function DocumentsPage() {
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadName, setUploadName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadAlert, setUploadAlert] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatingFileId, setGeneratingFileId] = useState(null);  const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [summaryText, setSummaryText] = useState('');
@@ -744,7 +747,7 @@ export default function DocumentsPage() {
       });
       if (!res.ok) {
         const corpoErro = await res.json().catch(() => null);
-        throw new Error(corpoErro?.errors?.[0]?.message || corpoErro?.detail || `Erro ${res.status}: falha no upload.`);
+        throw uploadErrorFrom(corpoErro, `Erro ${res.status}: falha no upload.`);
       }
       const novoArquivo = await res.json();
       if (uploadFolderId === currentFolderId) {
@@ -756,7 +759,7 @@ export default function DocumentsPage() {
       setUploadName('');
       window.dispatchEvent(new CustomEvent('brightedtech:docs-tour-unlock'));
     } catch (err) {
-      setError(err.message);
+      setUploadAlert({ title: err.title || getUploadErrorTitle(), message: err.message });
     } finally {
       setIsUploading(false);
     }
@@ -1109,6 +1112,14 @@ export default function DocumentsPage() {
             Esta ação não pode ser desfeita e todo o conteúdo será removido.
           </p>
         </Modal>
+      )}
+
+      {uploadAlert && (
+        <AlertModal
+          title={uploadAlert.title}
+          message={uploadAlert.message}
+          onClose={() => setUploadAlert(null)}
+        />
       )}
 
       {/* Modal: Upload de arquivo */}
