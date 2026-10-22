@@ -75,11 +75,11 @@ export default function App() {
           element={isAuthenticated ? <Navigate to="/dashboard" /> : <ForgotPasswordPage />} 
         />
 
-        <Route 
-          path="/signup" 
-          element={isAuthenticated ? <Navigate to="/dashboard" /> : <SignupPage />} 
+        <Route
+          path="/signup"
+          element={isAuthenticated ? <Navigate to="/dashboard" /> : <SignupPage />}
         />
-        
+
         <Route element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" />}>
           <Route path="/dashboard"   element={<OverviewPage />} />
           <Route path="/documents"   element={<DocumentsPage />} />

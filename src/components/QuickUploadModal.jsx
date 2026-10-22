@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import './QuickUploadModal.css';
 import { API_BASE } from '../config';
+import { validatePdfFile } from '../utils/pdfValidation';
 
 const NEW_FOLDER_VALUE = '__new__';
 
@@ -88,7 +89,10 @@ export default function QuickUploadModal({ dbUserId, onClose, onUploaded }) {
         headers: { Authorization: `Bearer ${token}`, 'X-User-Id': dbUserId },
         body: formData,
       });
-      if (!uploadRes.ok) throw new Error('Não foi possível enviar o documento.');
+      if (!uploadRes.ok) {
+        const corpoErro = await uploadRes.json().catch(() => null);
+        throw new Error(corpoErro?.detail || 'Não foi possível enviar o documento.');
+      }
       const documento = await uploadRes.json();
 
       onUploaded?.(documento);
@@ -157,10 +161,21 @@ export default function QuickUploadModal({ dbUserId, onClose, onUploaded }) {
                 style={{ display: 'none' }}
                 onChange={(e) => {
                   const f = e.target.files[0];
-                  if (f) { setFile(f); if (!docName) setDocName(f.name); }
+                  if (!f) return;
+                  const validationError = validatePdfFile(f);
+                  if (validationError) {
+                    setError(validationError);
+                    setFile(null);
+                    e.target.value = '';
+                    return;
+                  }
+                  setError('');
+                  setFile(f);
+                  if (!docName) setDocName(f.name);
                 }}
               />
             </label>
+            <p className="qu-field__hint">PDF, até 5MB.</p>
           </div>
 
           <div className="qu-field">

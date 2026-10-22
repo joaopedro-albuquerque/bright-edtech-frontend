@@ -359,23 +359,17 @@ export default function DashboardLayout() {
         // Guarda os dados no cache para enviar depois no PUT
         setPerfilCache(data);
 
-        // TODO(tour_concluido backend): quando o backend implementar a
-        // coluna/flag `tour_concluido` em /profile, descomentar o bloco
-        // abaixo para passar a confiar nela. Por enquanto ela fica sempre
-        // desconsiderada (tratada como `false`) e o tour roda em toda
-        // sessão ativa, controlado só pelo sessionStorage local.
-        //
-        // if (data.tour_concluido === undefined || data.tour_concluido === null) {
-        //   setTourDone(loadLocalTourCompleted());
-        // } else {
-        //   const concluido = Boolean(data.tour_concluido);
-        //   setTourDone(concluido);
-        //   if (concluido) {
-        //     // Backend já confirma como concluído: o estado local não é mais necessário
-        //     clearLocalTourState();
-        //   }
-        // }
-        setTourDone(loadLocalTourCompleted());
+        // Backend já persiste tour_concluido em /profile (coluna usuarios.tour_concluido).
+        if (data.tour_concluido === undefined || data.tour_concluido === null) {
+          setTourDone(loadLocalTourCompleted());
+        } else {
+          const concluido = Boolean(data.tour_concluido);
+          setTourDone(concluido);
+          if (concluido) {
+            // Backend já confirma como concluído: o estado local não é mais necessário
+            clearLocalTourState();
+          }
+        }
       } catch (error) {
         console.error('Erro ao verificar status do tour:', error);
         // Se não conseguimos confirmar com o backend, usamos o que sabemos localmente
@@ -700,45 +694,39 @@ export default function DashboardLayout() {
         finalizarTourDaRota();
       }
 
-      // TODO(tour_concluido backend): quando o backend implementar a
-      // coluna/flag `tour_concluido`, descomentar o bloco abaixo para
-      // persistir a conclusão do tour por lá via PUT /profile. Enquanto
-      // estiver comentado, a conclusão fica só no sessionStorage (ver
-      // saveLocalTourCompleted acima) e o tour volta a aparecer a cada
-      // novo login.
-      //
-      // if (!cognitoSub) return;
-      // try {
-      //   const session = await fetchAuthSession();
-      //   const token   = session.tokens.idToken.toString();
-      //
-      //   const payloadAtualizado = {
-      //     email: perfilCache.email || '',
-      //     nome: perfilCache.nome || null,
-      //     estilo_preferido: perfilCache.estilo_preferido || null,
-      //     formato_preferido: perfilCache.formato_preferido || null,
-      //     objetivos_estudo: perfilCache.objetivos_estudo || null,
-      //     cognito_id: cognitoSub,
-      //     tour_concluido: true,
-      //   };
-      //
-      //   const res = await fetch(`${API_BASE}/profile`, {
-      //     method: 'PUT',
-      //     headers: {
-      //       'Authorization': `Bearer ${token}`,
-      //       'X-User-Id': cognitoSub,
-      //       'Content-Type': 'application/json',
-      //     },
-      //     body: JSON.stringify(payloadAtualizado),
-      //   });
-      //
-      //   if (!res.ok) {
-      //     const err = await res.text();
-      //     console.error('Falha ao salvar conclusão do tour:', res.status, err);
-      //   }
-      // } catch (error) {
-      //   console.error('Erro ao enviar requisição do tour:', error);
-      // }
+      // Persiste a conclusão do tour no backend via PUT /profile/{id}.
+      if (!perfilCache.id) return;
+      try {
+        const session = await fetchAuthSession();
+        const token   = session.tokens.idToken.toString();
+
+        const payloadAtualizado = {
+          email: perfilCache.email || '',
+          nome: perfilCache.nome || null,
+          estilo_preferido: perfilCache.estilo_preferido || null,
+          formato_preferido: perfilCache.formato_preferido || null,
+          objetivos_estudo: perfilCache.objetivos_estudo || null,
+          cognito_id: perfilCache.cognito_id || cognitoSub,
+          tour_concluido: true,
+        };
+
+        const res = await fetch(`${API_BASE}/profile/${perfilCache.id}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'X-User-Id': perfilCache.id,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payloadAtualizado),
+        });
+
+        if (!res.ok) {
+          const err = await res.text();
+          console.error('Falha ao salvar conclusão do tour:', res.status, err);
+        }
+      } catch (error) {
+        console.error('Erro ao enviar requisição do tour:', error);
+      }
     }
   };
 

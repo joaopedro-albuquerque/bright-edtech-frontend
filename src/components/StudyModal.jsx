@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import '../pages/FlashcardsQuizzesPage.css';
 import { API_BASE } from '../config';
+import AIDisclaimerBanner from './AIDisclaimerBanner';
 
 const Icon = {
   close: (
@@ -226,6 +227,8 @@ export default function StudyModal({ item, tipo, onClose }) {
               </div>
               <button className="fq-modal__close" onClick={onClose} aria-label="Fechar">{Icon.close}</button>
             </div>
+
+            <AIDisclaimerBanner className="fq-modal__ai-disclaimer" />
 
             <div className="fq-study__body">
               {isLoading ? (

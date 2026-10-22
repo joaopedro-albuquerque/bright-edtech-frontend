@@ -4,7 +4,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import './SignupPage.css';
 import imageLogin from '../assets/ImageLogin.png';
 import logo from '../assets/Logo-Edtech.png';
-import { API_BASE } from '../config';
+import { API_BASE, TERMOS_DE_USO_VERSAO } from '../config';
+import TermsModal from '../components/TermsModal';
 
 export default function SignUpPage() {
   const [firstName, setFirstName]   = useState('');
@@ -15,6 +16,8 @@ export default function SignUpPage() {
   const [confirmCode, setConfirmCode] = useState('');
   const [cognitoId, setCognitoId] = useState('');
   const [cognitoConfirmed, setCognitoConfirmed] = useState(false);
+  const [aceitouTermos, setAceitouTermos] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   // step 1 = formulário | step 2 = confirmação de e-mail
   const [step, setStep]         = useState(1);
@@ -36,6 +39,10 @@ export default function SignUpPage() {
     e.preventDefault();
     if (!passwordValid) {
       setErrorMsg('A senha não atende a todos os requisitos.');
+      return;
+    }
+    if (!aceitouTermos) {
+      setErrorMsg('É necessário aceitar os Termos de Uso e a Política de Privacidade para continuar.');
       return;
     }
     setIsLoading(true);
@@ -88,7 +95,8 @@ export default function SignUpPage() {
             estilo_preferido: "",
             formato_preferido: "",
             objetivos_estudo: "",
-            cognito_id: cognitoId
+            cognito_id: cognitoId,
+            termos_versao: TERMOS_DE_USO_VERSAO,
           }),
         });
         if (!res.ok) throw new Error('db_error');
@@ -264,10 +272,27 @@ export default function SignUpPage() {
                 )}
               </div>
 
+              <label className="su-terms-check">
+                <input
+                  type="checkbox"
+                  checked={aceitouTermos}
+                  onChange={(e) => setAceitouTermos(e.target.checked)}
+                  required
+                />
+                <span>
+                  Li e aceito os{' '}
+                  <button type="button" className="su-terms-check__link" onClick={() => setShowTermsModal(true)}>
+                    Termos de Uso e a Política de Privacidade (LGPD)
+                  </button>
+                </span>
+              </label>
+
+              {showTermsModal && <TermsModal onClose={() => setShowTermsModal(false)} />}
+
               <button
                 type="submit"
                 className={`lp-submit${isLoading ? ' lp-submit--loading' : ''}`}
-                disabled={isLoading}
+                disabled={isLoading || !aceitouTermos}
               >
                 {isLoading ? (
                   <>

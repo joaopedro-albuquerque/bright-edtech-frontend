@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import ReactMarkdown from 'react-markdown';
+import AIDisclaimerBanner from '../components/AIDisclaimerBanner';
 import remarkGfm from 'remark-gfm';
 import './DocumentsPage.css';
 import { API_BASE } from '../config';
 import StudyModal from '../components/StudyModal';
 import Modal from '../components/Modal';
 import { RESUMO_FORMATOS } from '../constants/resumoFormatos';
+import { validatePdfFile } from '../utils/pdfValidation';
 
 /* ─────────────────────────────────────────────
    ÍCONES SVG INLINE
@@ -740,7 +742,10 @@ export default function DocumentsPage() {
         headers: { Authorization: `Bearer ${token}`, 'X-User-Id': bankUserId },
         body: formData,
       });
-      if (!res.ok) throw new Error(`Erro ${res.status}: falha no upload.`);
+      if (!res.ok) {
+        const corpoErro = await res.json().catch(() => null);
+        throw new Error(corpoErro?.detail || `Erro ${res.status}: falha no upload.`);
+      }
       const novoArquivo = await res.json();
       if (uploadFolderId === currentFolderId) {
         setFiles((prev) => [novoArquivo, ...prev]);
@@ -1147,13 +1152,24 @@ export default function DocumentsPage() {
               <input
                 id="upload-file"
                 type="file"
+                accept="application/pdf"
                 style={{ display: 'none' }}
                 onChange={(e) => {
                   const f = e.target.files[0];
-                  if (f) { setUploadFile(f); if (!uploadName) setUploadName(f.name); }
+                  if (!f) return;
+                  const validationError = validatePdfFile(f);
+                  if (validationError) {
+                    setError(validationError);
+                    setUploadFile(null);
+                    e.target.value = '';
+                    return;
+                  }
+                  setUploadFile(f);
+                  if (!uploadName) setUploadName(f.name);
                 }}
               />
             </label>
+            <p className="dp-modal__hint">PDF, até 5MB.</p>
           </div>
           <div className="dp-modal__field">
             <label className="dp-modal__label" htmlFor="upload-name">
@@ -1212,6 +1228,7 @@ export default function DocumentsPage() {
           confirmDisabled={false}
           onConfirm={closeSummaryModal}
         >
+          <AIDisclaimerBanner className="dp-modal__ai-disclaimer" />
           {summaryResumoId && (
             <button
               className="dp-btn dp-btn--ghost dp-summary-download-btn"
