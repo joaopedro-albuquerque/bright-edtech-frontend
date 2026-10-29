@@ -835,21 +835,51 @@
   justify-content: center;
 }
 
-.fq-rate-btn {
+.fq-rate {
+  width: 100%;
+  text-align: center;
+}
+
+.fq-rate__title {
   font-family: 'DM Sans', sans-serif;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  padding: 0.55rem 0.85rem;
+  color: var(--lp-text-dark, #0a1535);
+  margin: 0 0 0.5rem;
+}
+
+.fq-rate__hint {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.72rem;
+  color: var(--lp-text-muted, #6b7280);
+  margin: 0.45rem 0 0;
+}
+
+.fq-rate-btn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.15;
+  padding: 0.5rem 0.25rem;
   border-radius: 8px;
   border: 1.5px solid transparent;
   cursor: pointer;
   transition: opacity 0.15s;
 }
 
+.fq-rate-btn__num { font-size: 1rem; font-weight: 700; }
+
 .fq-rate-btn:hover { opacity: 0.85; }
 
 .fq-rate-btn--again { background: rgba(229,62,62,0.1);  color: #c53030; border-color: rgba(229,62,62,0.25); }
-.fq-rate-btn--hard   { background: rgba(221,107,32,0.1);  color: #c05621; border-color: rgba(221,107,32,0.25); }
+.fq-rate-btn--hard   { background: rgba(221,107,32,0.14);  color: #b7471a; border-color: rgba(221,107,32,0.3); }
+.fq-rate-btn--medium { background: rgba(214,158,46,0.12);  color: #975a16; border-color: rgba(214,158,46,0.3); }
 .fq-rate-btn--good   { background: rgba(56,161,105,0.1);  color: #276749; border-color: rgba(56,161,105,0.25); }
 .fq-rate-btn--easy   { background: rgba(56,161,105,0.18); color: #22543d; border-color: rgba(56,161,105,0.4); }
 
@@ -991,7 +1021,8 @@
 
   .fq-study__nav { gap: 0.4rem; }
   .fq-rate-bar { justify-content: space-between; }
-  .fq-rate-btn { flex: 1; padding: 0.55rem 0.4rem; font-size: 0.75rem; text-align: center; }
+  .fq-rate-bar { gap: 0.3rem; }
+  .fq-rate-btn { padding: 0.45rem 0.15rem; font-size: 0.66rem; text-align: center; }
 
   .fq-modal__difficulty { flex-direction: column; align-items: flex-start; }
   .fq-modal__difficulty-options { width: 100%; }

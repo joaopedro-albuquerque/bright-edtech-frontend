@@ -6,6 +6,7 @@ import { API_BASE } from '../config';
 import StudyModal from '../components/StudyModal';
 import AIDisclaimerBanner from '../components/AIDisclaimerBanner';
 import AlertModal from '../components/AlertModal';
+import { QUANTIDADES, QUANTIDADE_PADRAO } from '../constants/geracao';
 
 /* ─────────────────────────────────────────────
    ÍCONES
@@ -162,6 +163,7 @@ export default function FlashcardsQuizzesPage() {
   const [modalError,     setModalError]     = useState('');
   const [actionError,    setActionError]    = useState(null);
   const [selectedDificuldade, setSelectedDificuldade] = useState('medio');
+  const [selectedQuantidade, setSelectedQuantidade] = useState(QUANTIDADE_PADRAO);
 
   // ── Modal de estudo ──
   const [studyItem, setStudyItem] = useState(null); // { id, titulo, tipo }
@@ -234,6 +236,7 @@ export default function FlashcardsQuizzesPage() {
     setModalError('');
     setModalDocs([]);
     setSelectedDificuldade('medio');
+    setSelectedQuantidade(QUANTIDADE_PADRAO);
     setIsLoadingDocs(true);
     try {
       const { token } = await getAuthHeaders();
@@ -283,7 +286,7 @@ export default function FlashcardsQuizzesPage() {
       const res = await fetch(endpoint, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ quantidade: 10, dificuldade: selectedDificuldade }),
+        body: JSON.stringify({ quantidade: selectedQuantidade, dificuldade: selectedDificuldade }),
       });
 
       if (!res.ok) {
@@ -580,6 +583,22 @@ export default function FlashcardsQuizzesPage() {
                     onClick={() => setSelectedDificuldade(opt.value)}
                   >
                     {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="fq-modal__difficulty">
+              <span className="fq-modal__difficulty-label">Quantidade</span>
+              <div className="fq-modal__difficulty-options">
+                {QUANTIDADES.map(q => (
+                  <button
+                    key={q}
+                    type="button"
+                    className={`fq-difficulty-btn${selectedQuantidade === q ? ' fq-difficulty-btn--selected' : ''}`}
+                    onClick={() => setSelectedQuantidade(q)}
+                  >
+                    {q} perguntas
                   </button>
                 ))}
               </div>

@@ -3,6 +3,7 @@ import { fetchAuthSession } from 'aws-amplify/auth';
 import '../pages/FlashcardsQuizzesPage.css';
 import { API_BASE } from '../config';
 import AIDisclaimerBanner from './AIDisclaimerBanner';
+import { AVALIACOES_FLASHCARD } from '../constants/geracao';
 
 const Icon = {
   close: (
@@ -305,11 +306,21 @@ export default function StudyModal({ item, tipo, onClose }) {
             {!isLoading && !error && cards.length > 0 && (
               <div className="fq-study__nav">
                 {isFlashcard && flipped && (
-                  <div className="fq-rate-bar">
-                    <button className="fq-rate-btn fq-rate-btn--again" onClick={() => avaliarCartao(1)}>Errei</button>
-                    <button className="fq-rate-btn fq-rate-btn--hard"  onClick={() => avaliarCartao(3)}>Difícil</button>
-                    <button className="fq-rate-btn fq-rate-btn--good"  onClick={() => avaliarCartao(4)}>Bom</button>
-                    <button className="fq-rate-btn fq-rate-btn--easy"  onClick={() => avaliarCartao(5)}>Fácil</button>
+                  <div className="fq-rate">
+                    <p className="fq-rate__title">Como você avalia a dificuldade desse flashcard?</p>
+                    <div className="fq-rate-bar">
+                      {AVALIACOES_FLASHCARD.map(a => (
+                        <button
+                          key={a.qualidade}
+                          className={`fq-rate-btn fq-rate-btn--${a.modifier}`}
+                          onClick={() => avaliarCartao(a.qualidade)}
+                        >
+                          <span className="fq-rate-btn__num">{a.qualidade}</span>
+                          <span className="fq-rate-btn__label">{a.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <p className="fq-rate__hint">Isso define quando o card volta pra revisão.</p>
                   </div>
                 )}
                 <div className="fq-study__nav-row">

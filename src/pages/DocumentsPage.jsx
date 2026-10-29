@@ -8,6 +8,7 @@ import { API_BASE } from '../config';
 import StudyModal from '../components/StudyModal';
 import Modal from '../components/Modal';
 import { RESUMO_FORMATOS } from '../constants/resumoFormatos';
+import { NIVEIS_CONHECIMENTO, NIVEL_PADRAO, QUANTIDADES, QUANTIDADE_PADRAO } from '../constants/geracao';
 import { validatePdfFile } from '../utils/pdfValidation';
 import { uploadErrorFrom, getUploadErrorTitle } from '../utils/uploadErrors';
 import AlertModal from '../components/AlertModal';
@@ -164,6 +165,8 @@ export default function DocumentsPage() {
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [newSummaryTarget, setNewSummaryTarget] = useState(null); // file
   const [newSummaryFormat, setNewSummaryFormat] = useState('cornell');
+  const [newSummaryNivel, setNewSummaryNivel] = useState(NIVEL_PADRAO);
+  const [quickQuantidade, setQuickQuantidade] = useState(QUANTIDADE_PADRAO);
   const [summaryReturnTo,  setSummaryReturnTo]  = useState(null); // file a reabrir na lista ao fechar a visualização
   const [openMenuId, setOpenMenuId] = useState(null); // id da pasta com menu aberto
   const menuRef = useRef(null);
@@ -488,7 +491,7 @@ export default function DocumentsPage() {
       const postRes = await fetch(`${API_BASE}/documentos/${file.id}/resumos`, {
         method: 'POST',
         headers: { ...headers, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nivel_conhecimento: 3, formato: newSummaryFormat, tom: 'direto e claro' }),
+        body: JSON.stringify({ nivel_conhecimento: newSummaryNivel, formato: newSummaryFormat, tom: 'direto e claro' }),
       });
       if (!postRes.ok) throw new Error(`Erro ${postRes.status}: não foi possível gerar o resumo.`);
       const created = await postRes.json();
@@ -590,7 +593,7 @@ export default function DocumentsPage() {
       const res = await fetch(`${API_BASE}/documentos/${file.id}/${tipo}`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ quantidade: 10, dificuldade: 'medio' }),
+        body: JSON.stringify({ quantidade: quickQuantidade, dificuldade: 'medio' }),
       });
       if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível gerar.`);
       const created = await res.json();
@@ -1206,6 +1209,25 @@ export default function DocumentsPage() {
               {RESUMO_FORMATOS.find(f => f.value === newSummaryFormat)?.description}
             </p>
           </div>
+          <div className="dp-modal__field">
+            <label className="dp-modal__label">Seu nível de conhecimento no assunto</label>
+            <div className="dp-format-options">
+              {NIVEIS_CONHECIMENTO.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`dp-format-btn${newSummaryNivel === opt.value ? ' dp-format-btn--selected' : ''}`}
+                  onClick={() => setNewSummaryNivel(opt.value)}
+                  disabled={isGenerating}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="dp-format-description">
+              {NIVEIS_CONHECIMENTO.find(n => n.value === newSummaryNivel)?.description}
+            </p>
+          </div>
         </Modal>
       )}
 
@@ -1293,6 +1315,24 @@ export default function DocumentsPage() {
               <button className="dp-modal__close" onClick={closeContentModal} aria-label="Fechar">✕</button>
             </div>
             <div className="dp-modal__body">
+              {contentModal.tipo !== 'resumos' && (
+                <div className="dp-modal__field">
+                  <label className="dp-modal__label">Quantas perguntas?</label>
+                  <div className="dp-format-options">
+                    {QUANTIDADES.map(q => (
+                      <button
+                        key={q}
+                        type="button"
+                        className={`dp-format-btn${quickQuantidade === q ? ' dp-format-btn--selected' : ''}`}
+                        onClick={() => setQuickQuantidade(q)}
+                        disabled={isQuickGenerating}
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <button
                 type="button"
                 className="dp-btn dp-btn--ghost dp-content-list__generate-btn"
@@ -1303,6 +1343,7 @@ export default function DocumentsPage() {
                     closeContentModal();
                     setNewSummaryTarget(file);
                     setNewSummaryFormat('cornell');
+                    setNewSummaryNivel(NIVEL_PADRAO);
                   } else {
                     quickGenerateContent();
                   }

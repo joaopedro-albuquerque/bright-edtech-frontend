@@ -7,6 +7,7 @@ import AlertModal from '../components/AlertModal';
 import './OverviewPage.css';
 import { API_BASE } from '../config';
 import { RESUMO_FORMATOS } from '../constants/resumoFormatos';
+import { NIVEIS_CONHECIMENTO, NIVEL_PADRAO } from '../constants/geracao';
 
 /* ─────────────────────────────────────────────
    ÍCONES SVG INLINE
@@ -184,8 +185,9 @@ export default function OverviewPage() {
   /* ── Gera um resumo a partir do atalho rápido, formato escolhido pelo usuário ── */
   const [quickResumoTarget, setQuickResumoTarget] = useState(null); // doc
   const [quickResumoFormat, setQuickResumoFormat] = useState('cornell');
+  const [quickResumoNivel, setQuickResumoNivel] = useState(NIVEL_PADRAO);
 
-  const handleQuickResumo = async (doc, formato) => {
+  const handleQuickResumo = async (doc, formato, nivel) => {
     setGeneratingDocId(doc.id);
     setQuickResumoMsg(null);
     setQuickResumoTarget(null);
@@ -198,7 +200,7 @@ export default function OverviewPage() {
           'X-User-Id': dbUserId,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ nivel_conhecimento: 5, formato, tom: 'direto' }),
+        body: JSON.stringify({ nivel_conhecimento: nivel, formato, tom: 'direto' }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -373,7 +375,7 @@ export default function OverviewPage() {
                   )}
                   <button
                     className="ov-quick-resumo-item__btn"
-                    onClick={() => { setQuickResumoTarget(doc); setQuickResumoFormat('cornell'); }}
+                    onClick={() => { setQuickResumoTarget(doc); setQuickResumoFormat('cornell'); setQuickResumoNivel(NIVEL_PADRAO); }}
                     disabled={isGenerating}
                   >
                     {isGenerating ? 'Gerando...' : 'Gerar Resumo'}
@@ -486,9 +488,25 @@ export default function OverviewPage() {
             <p className="ov-format-modal__description">
               {RESUMO_FORMATOS.find(f => f.value === quickResumoFormat)?.description}
             </p>
+            <p className="ov-format-modal__label">Seu nível de conhecimento no assunto</p>
+            <div className="ov-format-modal__options">
+              {NIVEIS_CONHECIMENTO.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  className={`ov-format-btn${quickResumoNivel === opt.value ? ' ov-format-btn--selected' : ''}`}
+                  onClick={() => setQuickResumoNivel(opt.value)}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="ov-format-modal__description">
+              {NIVEIS_CONHECIMENTO.find(n => n.value === quickResumoNivel)?.description}
+            </p>
             <div className="ov-format-modal__footer">
               <button className="ov-format-modal__cancel" onClick={() => setQuickResumoTarget(null)}>Cancelar</button>
-              <button className="ov-format-modal__confirm" onClick={() => handleQuickResumo(quickResumoTarget, quickResumoFormat)}>
+              <button className="ov-format-modal__confirm" onClick={() => handleQuickResumo(quickResumoTarget, quickResumoFormat, quickResumoNivel)}>
                 Gerar
               </button>
             </div>
