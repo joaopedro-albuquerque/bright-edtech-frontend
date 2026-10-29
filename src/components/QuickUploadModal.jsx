@@ -5,8 +5,8 @@ import { API_BASE } from '../config';
 import { validatePdfFile } from '../utils/pdfValidation';
 import { uploadErrorFrom, getUploadErrorTitle } from '../utils/uploadErrors';
 import AlertModal from './AlertModal';
-
-const NEW_FOLDER_VALUE = '__new__';
+import SeletorPasta from './SeletorPasta';
+import { montarArvore, formatarCaminho } from '../utils/arvorePastas';
 
 async function getAuthHeaders() {
   const session = await fetchAuthSession();
@@ -27,7 +27,7 @@ async function getAuthHeaders() {
 export default function QuickUploadModal({ dbUserId, onClose, onUploaded }) {
   const [folders, setFolders] = useState([]);
   const [isLoadingFolders, setIsLoadingFolders] = useState(true);
-  const [selectedFolderId, setSelectedFolderId] = useState('');
+  const [destino, setDestino] = useState(null); // { modo: 'existente', id } | { modo: 'nova', paiId }
   const [newFolderName, setNewFolderName] = useState('');
   const [file, setFile] = useState(null);
   const [docName, setDocName] = useState('');
@@ -53,17 +53,20 @@ export default function QuickUploadModal({ dbUserId, onClose, onUploaded }) {
     })();
   }, [dbUserId]);
 
-  const isCreatingFolder = selectedFolderId === NEW_FOLDER_VALUE;
+  const isCreatingFolder = destino?.modo === 'nova';
   const canSubmit = !!file
-    && (isCreatingFolder ? newFolderName.trim().length > 0 : !!selectedFolderId)
+    && (isCreatingFolder ? newFolderName.trim().length > 0 : destino?.modo === 'existente')
     && !isSubmitting;
+  const paiDaNova = isCreatingFolder && destino.paiId
+    ? formatarCaminho(montarArvore(folders).caminhoDe(destino.paiId))
+    : 'Início';
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
     setIsSubmitting(true);
     try {
       const { token } = await getAuthHeaders();
-      let pastaId = selectedFolderId;
+      let pastaId = destino.id;
 
       if (isCreatingFolder) {
         const res = await fetch(`${API_BASE}/pastas`, {
@@ -73,7 +76,7 @@ export default function QuickUploadModal({ dbUserId, onClose, onUploaded }) {
             'X-User-Id': dbUserId,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ nome: newFolderName.trim(), pasta_pai_id: null }),
+          body: JSON.stringify({ nome: newFolderName.trim(), pasta_pai_id: destino.paiId ?? null }),
         });
         if (!res.ok) throw new Error('Não foi possível criar a pasta.');
         const nova = await res.json();
@@ -117,22 +120,11 @@ export default function QuickUploadModal({ dbUserId, onClose, onUploaded }) {
         <div className="qu-modal__body">
 
           <div className="qu-field">
-            <label className="qu-field__label" htmlFor="qu-folder">Pasta de destino</label>
+            <span className="qu-field__label">Pasta de destino</span>
             {isLoadingFolders ? (
               <p className="qu-field__hint">Carregando pastas...</p>
             ) : (
-              <select
-                id="qu-folder"
-                className="qu-field__input"
-                value={selectedFolderId}
-                onChange={(e) => setSelectedFolderId(e.target.value)}
-              >
-                <option value="" disabled>Selecione uma pasta</option>
-                {folders.map((f) => (
-                  <option key={f.id} value={f.id}>{f.nome}</option>
-                ))}
-                <option value={NEW_FOLDER_VALUE}>+ Criar nova pasta</option>
-              </select>
+              <SeletorPasta pastas={folders} valor={destino} onChange={setDestino} permitirNova />
             )}
           </div>
 
@@ -148,6 +140,7 @@ export default function QuickUploadModal({ dbUserId, onClose, onUploaded }) {
                 placeholder="Ex: Biologia - 3º Ano"
                 autoFocus
               />
+              <p className="qu-field__hint">Será criada em: {paiDaNova}</p>
             </div>
           )}
 

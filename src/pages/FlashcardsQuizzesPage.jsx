@@ -560,7 +560,7 @@ export default function FlashcardsQuizzesPage() {
                           <span className="fq-modal__doc-icon">{Icon.file}</span>
                           <span className="fq-modal__doc-text">
                             <span className="fq-modal__doc-name">{doc.nome}</span>
-                            {doc.pasta_nome && <span className="fq-modal__doc-folder">{doc.pasta_nome}</span>}
+                            {(doc.pasta_caminho || doc.pasta_nome) && <span className="fq-modal__doc-folder">{doc.pasta_caminho || doc.pasta_nome}</span>}
                           </span>
                           {selectedDocId === doc.id && (
                             <span className="fq-modal__doc-check">{Icon.check}</span>

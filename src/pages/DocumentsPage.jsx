@@ -8,11 +8,14 @@ import { API_BASE } from '../config';
 import StudyModal from '../components/StudyModal';
 import Modal from '../components/Modal';
 import { RESUMO_FORMATOS } from '../constants/resumoFormatos';
-import { NIVEIS_CONHECIMENTO, NIVEL_PADRAO, QUANTIDADES, QUANTIDADE_PADRAO, DIFICULDADES } from '../constants/geracao';
+import { NIVEIS_CONHECIMENTO, NIVEL_PADRAO, QUANTIDADE_PADRAO } from '../constants/geracao';
 import { validatePdfFile } from '../utils/pdfValidation';
 import { uploadErrorFrom, getUploadErrorTitle } from '../utils/uploadErrors';
 import AlertModal from '../components/AlertModal';
 import GeneratingOverlay from '../components/GeneratingOverlay';
+import CampoBusca from '../components/CampoBusca';
+import OpcoesGeracaoItens from '../components/OpcoesGeracaoItens';
+import { useDocumentosBusca } from '../hooks/useDocumentosBusca';
 
 const PdfViewer = lazy(() => import('../components/PdfViewer'));
 
@@ -191,6 +194,10 @@ export default function DocumentsPage() {
   const [deleteContentTarget, setDeleteContentTarget] = useState(null); // { tipo, id, titulo }
   const [isSavingContent,     setIsSavingContent]     = useState(false);
   const [isQuickGenerating,   setIsQuickGenerating]   = useState(false);
+  const [gerandoTipo,        setGerandoTipo]        = useState(null); // 'flashcards' | 'quizzes'
+  const [alvoGeracao,        setAlvoGeracao]        = useState(null); // { file, tipo } vindo da busca
+  const [erroGeracao,        setErroGeracao]        = useState('');
+  const [termoBusca,         setTermoBusca]         = useState('');
   const [studyItem,           setStudyItem]           = useState(null); // { id, titulo, tipo }
 
   const CONTENT_LABELS = {
@@ -531,6 +538,9 @@ export default function DocumentsPage() {
     return { Authorization: `Bearer ${token}`, 'X-User-Id': bankUserId };
   };
 
+  const buscando = termoBusca.trim() !== '';
+  const busca = useDocumentosBusca({ termo: termoBusca, ativo: true, getHeaders: montarHeaders, somenteComTermo: true });
+
   const visualizarResumoPdf = (resumoId, titulo) =>
     setVisualizador({ titulo: titulo || 'Resumo', path: `/resumos/${resumoId}/pdf` });
 
@@ -576,31 +586,66 @@ export default function DocumentsPage() {
   };
 
   /* ── Geração rápida de flashcard/quiz direto do Document Hub ── */
+  const gerarItens = async (file, tipo) => {
+    const headers = { ...(await montarHeaders()), 'Content-Type': 'application/json' };
+    const res = await fetch(`${API_BASE}/documentos/${file.id}/${tipo}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ quantidade: quickQuantidade, dificuldade: quickDificuldade }),
+    });
+    if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível gerar.`);
+    const created = await res.json();
+    setFileCounts(prev => ({
+      ...prev,
+      [file.id]: { ...(prev[file.id] || { resumos: 0, flashcards: 0, quizzes: 0 }), [tipo]: (prev[file.id]?.[tipo] ?? 0) + 1 },
+    }));
+    return created;
+  };
+
   const quickGenerateContent = async () => {
     if (!contentModal) return;
     const { file, tipo } = contentModal;
+    setGerandoTipo(tipo);
     setIsQuickGenerating(true);
     setContentModalError('');
     try {
-      const { token } = await getAuthHeaders();
-      const bankUserId = dbUserId || await getBankUserId(token);
-      const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': bankUserId, 'Content-Type': 'application/json' };
-
-      const res = await fetch(`${API_BASE}/documentos/${file.id}/${tipo}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ quantidade: quickQuantidade, dificuldade: quickDificuldade }),
-      });
-      if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível gerar.`);
-      const created = await res.json();
-
+      const created = await gerarItens(file, tipo);
       setContentModalItems(prev => [created, ...prev]);
-      setFileCounts(prev => ({
-        ...prev,
-        [file.id]: { ...(prev[file.id] || { resumos: 0, flashcards: 0, quizzes: 0 }), [tipo]: (prev[file.id]?.[tipo] ?? 0) + 1 },
-      }));
     } catch (err) {
       setContentModalError(err.message);
+    } finally {
+      setIsQuickGenerating(false);
+    }
+  };
+
+  /* ── Geração a partir dos resultados da busca ── */
+  const arquivoDaBusca = (doc) => ({ id: doc.id, nome: doc.nome, nome_documento: doc.nome });
+
+  const abrirGeracaoResumo = (doc) => {
+    setNewSummaryTarget(arquivoDaBusca(doc));
+    setNewSummaryFormat('cornell');
+    setNewSummaryNivel(NIVEL_PADRAO);
+  };
+
+  const abrirGeracaoItens = (doc, tipo) => {
+    setQuickQuantidade(QUANTIDADE_PADRAO);
+    setQuickDificuldade('medio');
+    setErroGeracao('');
+    setAlvoGeracao({ file: arquivoDaBusca(doc), tipo });
+  };
+
+  const confirmarGeracaoItens = async () => {
+    if (!alvoGeracao) return;
+    const { file, tipo } = alvoGeracao;
+    setGerandoTipo(tipo);
+    setIsQuickGenerating(true);
+    setErroGeracao('');
+    try {
+      await gerarItens(file, tipo);
+      setAlvoGeracao(null);
+      openContentModal(file, tipo);
+    } catch (err) {
+      setErroGeracao(err.message);
     } finally {
       setIsQuickGenerating(false);
     }
@@ -756,8 +801,70 @@ export default function DocumentsPage() {
         </div>
       </header>
 
+      {/* ── Busca de documentos em todas as pastas ── */}
+      <div className="dp-search">
+        <CampoBusca
+          valor={termoBusca}
+          onChange={setTermoBusca}
+          placeholder="Buscar documento em todas as pastas…"
+          ariaLabel="Buscar documento"
+        />
+      </div>
+
+      {buscando && (
+        <section className="dp-section dp-search-results" aria-label="Resultados da busca">
+          {busca.carregando && busca.itens.length === 0 && <p className="dp-search-status">Buscando…</p>}
+          {!busca.carregando && busca.erro && <p className="dp-search-status dp-search-status--erro">{busca.erro}</p>}
+          {!busca.carregando && !busca.erro && busca.itens.length === 0 && (
+            <p className="dp-search-status">Nenhum documento encontrado para <strong>“{busca.termoAplicado}”</strong>.</p>
+          )}
+          {busca.itens.length > 0 && (
+            <p className="dp-search-status" aria-live="polite">
+              {busca.total} {busca.total === 1 ? 'documento encontrado' : 'documentos encontrados'}
+            </p>
+          )}
+          <ul className="dp-search-list" role="list">
+            {busca.itens.map((doc) => (
+              <li key={doc.id} className="dp-search-item">
+                <div className="dp-search-item__info">
+                  <span className="dp-search-item__name" title={doc.nome}>{doc.nome}</span>
+                  {(doc.pasta_caminho || doc.pasta_nome) && (
+                    <span className="dp-search-item__path">{Icon.folder} {doc.pasta_caminho || doc.pasta_nome}</span>
+                  )}
+                </div>
+                <div className="dp-search-item__actions">
+                  <button
+                    type="button"
+                    className="dp-file-item__icon-btn"
+                    title="Visualizar PDF"
+                    aria-label={`Visualizar ${doc.nome}`}
+                    onClick={() => handleOpenDocument(arquivoDaBusca(doc))}
+                  >
+                    {Icon.eye}
+                  </button>
+                  <button type="button" className="dp-file-item__count dp-file-item__count--resumos" onClick={() => abrirGeracaoResumo(doc)}>
+                    Gerar resumo
+                  </button>
+                  <button type="button" className="dp-file-item__count dp-file-item__count--flashcards" onClick={() => abrirGeracaoItens(doc, 'flashcards')}>
+                    Gerar flashcards
+                  </button>
+                  <button type="button" className="dp-file-item__count dp-file-item__count--quizzes" onClick={() => abrirGeracaoItens(doc, 'quizzes')}>
+                    Gerar quiz
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+          {busca.temMais && (
+            <button type="button" className="dp-search-more" onClick={busca.carregarMais} disabled={busca.carregandoMais}>
+              {busca.carregandoMais ? 'Carregando…' : 'Carregar mais'}
+            </button>
+          )}
+        </section>
+      )}
+
       {/* ── Breadcrumb ── */}
-      {(breadcrumb.length > 0) && (
+      {!buscando && (breadcrumb.length > 0) && (
         <nav className="dp-breadcrumb" aria-label="Localização">
           <button className="dp-breadcrumb__item dp-breadcrumb__item--link"
             onClick={() => navigateTo(null, -1)}>
@@ -793,7 +900,7 @@ export default function DocumentsPage() {
       )}
 
       {/* ── Estado de carregamento ── */}
-      {isLoading && (
+      {!buscando && isLoading && (
         <div className="dp-loading">
           {Icon.spinner}
           <span>Carregando...</span>
@@ -801,7 +908,7 @@ export default function DocumentsPage() {
       )}
 
       {/* ── Estado vazio ── */}
-      {isEmpty && (
+      {!buscando && isEmpty && (
         <div className="dp-empty" data-tour="dp-empty">
           <div className="dp-empty__icon">{Icon.folder}</div>
           <p className="dp-empty__title">Nenhuma pasta por aqui</p>
@@ -817,7 +924,7 @@ export default function DocumentsPage() {
       )}
 
       {/* ── Grade de pastas ── */}
-      {!isLoading && folders.length > 0 && (
+      {!buscando && !isLoading && folders.length > 0 && (
         <section className="dp-section">
           {breadcrumb.length > 0 && <h2 className="dp-section__label">Pastas</h2>}
           <div className="dp-grid" data-tour="dp-folder-grid">
@@ -894,7 +1001,7 @@ export default function DocumentsPage() {
       )}
 
       {/* ── Lista de arquivos (dentro de uma pasta) ── */}
-      {!isLoading && files.length > 0 && (
+      {!buscando && !isLoading && files.length > 0 && (
         <section className="dp-section">
           <h2 className="dp-section__label">Arquivos</h2>
           <ul className="dp-file-list" data-tour="dp-file-list">
@@ -1193,6 +1300,28 @@ export default function DocumentsPage() {
         </Modal>
       )}
 
+      {/* Modal: gerar flashcards/quiz de um documento achado na busca */}
+      {alvoGeracao && (
+        <Modal
+          title={alvoGeracao.tipo === 'flashcards' ? 'Gerar flashcards' : 'Gerar quiz'}
+          onClose={() => !isQuickGenerating && setAlvoGeracao(null)}
+          onConfirm={confirmarGeracaoItens}
+          confirmLabel="Gerar"
+          isLoading={isQuickGenerating}
+        >
+          <p className="dp-modal__text">Documento: <strong>{alvoGeracao.file.nome}</strong></p>
+          <OpcoesGeracaoItens
+            tipo={alvoGeracao.tipo}
+            quantidade={quickQuantidade}
+            onQuantidade={setQuickQuantidade}
+            dificuldade={quickDificuldade}
+            onDificuldade={setQuickDificuldade}
+            disabled={isQuickGenerating}
+          />
+          {erroGeracao && <p className="dp-modal__text" style={{ color: '#c53030' }}>{erroGeracao}</p>}
+        </Modal>
+      )}
+
       {/* Modal: Resumo do Documento */}
       {showSummaryModal && (
         <Modal
@@ -1277,42 +1406,14 @@ export default function DocumentsPage() {
             </div>
             <div className="dp-modal__body">
               {contentModal.tipo !== 'resumos' && (
-                <>
-                <div className="dp-modal__field">
-                  <label className="dp-modal__label">
-                    Quantas perguntas você deseja para esse {contentModal.tipo === 'flashcards' ? 'flashcard' : 'quiz'}?
-                  </label>
-                  <div className="dp-format-options">
-                    {QUANTIDADES.map(q => (
-                      <button
-                        key={q}
-                        type="button"
-                        className={`dp-format-btn${quickQuantidade === q ? ' dp-format-btn--selected' : ''}`}
-                        onClick={() => setQuickQuantidade(q)}
-                        disabled={isQuickGenerating}
-                      >
-                        {q}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="dp-modal__field">
-                  <label className="dp-modal__label">Qual o nível de dificuldade?</label>
-                  <div className="dp-format-options">
-                    {DIFICULDADES.map(d => (
-                      <button
-                        key={d.value}
-                        type="button"
-                        className={`dp-format-btn${quickDificuldade === d.value ? ' dp-format-btn--selected' : ''}`}
-                        onClick={() => setQuickDificuldade(d.value)}
-                        disabled={isQuickGenerating}
-                      >
-                        {d.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                </>
+                <OpcoesGeracaoItens
+                  tipo={contentModal.tipo}
+                  quantidade={quickQuantidade}
+                  onQuantidade={setQuickQuantidade}
+                  dificuldade={quickDificuldade}
+                  onDificuldade={setQuickDificuldade}
+                  disabled={isQuickGenerating}
+                />
               )}
               <button
                 type="button"
@@ -1467,8 +1568,8 @@ export default function DocumentsPage() {
           />
         </Suspense>
       )}
-      {isQuickGenerating && contentModal && (
-        <GeneratingOverlay tipo={contentModal.tipo === 'flashcards' ? 'flashcard' : 'quiz'} />
+      {isQuickGenerating && gerandoTipo && (
+        <GeneratingOverlay tipo={gerandoTipo === 'flashcards' ? 'flashcard' : 'quiz'} />
       )}
     </div>
   );

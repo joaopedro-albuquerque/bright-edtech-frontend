@@ -1062,3 +1062,77 @@
   justify-content: center;
   margin-bottom: 0.9rem;
 }
+
+/* ── Busca de documentos ── */
+.dp-search { max-width: 560px; margin: 0 0 1.1rem; }
+
+.dp-search-status {
+  margin: 0 0 0.6rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  color: var(--lp-text-muted, #6b7280);
+}
+.dp-search-status--erro { color: #c53030; }
+
+.dp-search-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.dp-search-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem 1rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1rem;
+  background: var(--dp-card-bg, #ffffff);
+  border: 1.5px solid var(--dp-card-border, rgba(10, 21, 53, 0.08));
+  border-radius: var(--dp-radius, 12px);
+  box-shadow: var(--dp-shadow, none);
+}
+
+.dp-search-item__info { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.dp-search-item__name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--lp-text-dark, #0a1535);
+  overflow-wrap: anywhere;
+}
+.dp-search-item__path {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  color: var(--lp-text-muted, #6b7280);
+  overflow-wrap: anywhere;
+}
+.dp-search-item__path svg { flex-shrink: 0; margin-top: 0.12rem; width: 14px; height: 14px; }
+
+.dp-search-item__actions { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; }
+
+.dp-search-more {
+  display: block;
+  width: 100%;
+  margin-top: 0.7rem;
+  padding: 0.65rem;
+  border: 1.5px dashed rgba(10, 21, 53, 0.18);
+  border-radius: 10px;
+  background: none;
+  color: var(--lp-text-muted, #6b7280);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.dp-search-more:hover:not(:disabled) { border-color: rgba(74, 144, 217, 0.5); color: #2c5282; }
+.dp-search-more:disabled { cursor: default; opacity: 0.7; }
+
+@media (max-width: 480px) {
+  .dp-search-item__actions { width: 100%; }
+}
