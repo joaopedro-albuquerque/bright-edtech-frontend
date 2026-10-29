@@ -569,7 +569,7 @@ export default function FlashcardsQuizzesPage() {
             </div>
 
             <div className="fq-modal__difficulty">
-              <span className="fq-modal__difficulty-label">Dificuldade</span>
+              <span className="fq-modal__difficulty-label">Qual o nível de dificuldade?</span>
               <div className="fq-modal__difficulty-options">
                 {[
                   { value: 'facil',   label: 'Fácil' },
@@ -589,7 +589,9 @@ export default function FlashcardsQuizzesPage() {
             </div>
 
             <div className="fq-modal__difficulty">
-              <span className="fq-modal__difficulty-label">Quantidade</span>
+              <span className="fq-modal__difficulty-label">
+                Quantas perguntas você deseja para esse {showModal === 'flashcard' ? 'flashcard' : 'quiz'}?
+              </span>
               <div className="fq-modal__difficulty-options">
                 {QUANTIDADES.map(q => (
                   <button
@@ -598,7 +600,7 @@ export default function FlashcardsQuizzesPage() {
                     className={`fq-difficulty-btn${selectedQuantidade === q ? ' fq-difficulty-btn--selected' : ''}`}
                     onClick={() => setSelectedQuantidade(q)}
                   >
-                    {q} perguntas
+                    {q}
                   </button>
                 ))}
               </div>

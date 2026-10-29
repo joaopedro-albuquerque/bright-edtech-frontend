@@ -10,10 +10,17 @@ export const QUANTIDADES = [5, 10, 15];
 
 export const QUANTIDADE_PADRAO = 10;
 
+export const DIFICULDADES = [
+  { value: 'facil',   label: 'Fácil' },
+  { value: 'medio',   label: 'Médio' },
+  { value: 'dificil', label: 'Difícil' },
+];
+
+// Na tela 1 = mais fácil e 5 = mais difícil; a API (SM-2) usa o inverso (5 = melhor).
 export const AVALIACOES_FLASHCARD = [
-  { qualidade: 1, label: 'Não lembrei',  modifier: 'again' },
-  { qualidade: 2, label: 'Muito difícil', modifier: 'hard' },
-  { qualidade: 3, label: 'Difícil',       modifier: 'medium' },
-  { qualidade: 4, label: 'Bom',           modifier: 'good' },
-  { qualidade: 5, label: 'Fácil',         modifier: 'easy' },
+  { nota: 1, qualidade: 5, label: 'Fácil',         modifier: 'easy' },
+  { nota: 2, qualidade: 4, label: 'Tranquilo',     modifier: 'good' },
+  { nota: 3, qualidade: 3, label: 'Médio',         modifier: 'medium' },
+  { nota: 4, qualidade: 2, label: 'Difícil',       modifier: 'hard' },
+  { nota: 5, qualidade: 1, label: 'Não lembrei',   modifier: 'again' },
 ];

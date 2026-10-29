@@ -311,11 +311,11 @@ export default function StudyModal({ item, tipo, onClose }) {
                     <div className="fq-rate-bar">
                       {AVALIACOES_FLASHCARD.map(a => (
                         <button
-                          key={a.qualidade}
+                          key={a.nota}
                           className={`fq-rate-btn fq-rate-btn--${a.modifier}`}
                           onClick={() => avaliarCartao(a.qualidade)}
                         >
-                          <span className="fq-rate-btn__num">{a.qualidade}</span>
+                          <span className="fq-rate-btn__num">{a.nota}</span>
                           <span className="fq-rate-btn__label">{a.label}</span>
                         </button>
                       ))}

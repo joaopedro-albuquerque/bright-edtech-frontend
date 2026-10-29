@@ -8,7 +8,7 @@ import { API_BASE } from '../config';
 import StudyModal from '../components/StudyModal';
 import Modal from '../components/Modal';
 import { RESUMO_FORMATOS } from '../constants/resumoFormatos';
-import { NIVEIS_CONHECIMENTO, NIVEL_PADRAO, QUANTIDADES, QUANTIDADE_PADRAO } from '../constants/geracao';
+import { NIVEIS_CONHECIMENTO, NIVEL_PADRAO, QUANTIDADES, QUANTIDADE_PADRAO, DIFICULDADES } from '../constants/geracao';
 import { validatePdfFile } from '../utils/pdfValidation';
 import { uploadErrorFrom, getUploadErrorTitle } from '../utils/uploadErrors';
 import AlertModal from '../components/AlertModal';
@@ -167,6 +167,7 @@ export default function DocumentsPage() {
   const [newSummaryFormat, setNewSummaryFormat] = useState('cornell');
   const [newSummaryNivel, setNewSummaryNivel] = useState(NIVEL_PADRAO);
   const [quickQuantidade, setQuickQuantidade] = useState(QUANTIDADE_PADRAO);
+  const [quickDificuldade, setQuickDificuldade] = useState('medio');
   const [summaryReturnTo,  setSummaryReturnTo]  = useState(null); // file a reabrir na lista ao fechar a visualização
   const [openMenuId, setOpenMenuId] = useState(null); // id da pasta com menu aberto
   const menuRef = useRef(null);
@@ -593,7 +594,7 @@ export default function DocumentsPage() {
       const res = await fetch(`${API_BASE}/documentos/${file.id}/${tipo}`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ quantidade: quickQuantidade, dificuldade: 'medio' }),
+        body: JSON.stringify({ quantidade: quickQuantidade, dificuldade: quickDificuldade }),
       });
       if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível gerar.`);
       const created = await res.json();
@@ -1317,7 +1318,9 @@ export default function DocumentsPage() {
             <div className="dp-modal__body">
               {contentModal.tipo !== 'resumos' && (
                 <div className="dp-modal__field">
-                  <label className="dp-modal__label">Quantas perguntas?</label>
+                  <label className="dp-modal__label">
+                    Quantas perguntas você deseja para esse {contentModal.tipo === 'flashcards' ? 'flashcard' : 'quiz'}?
+                  </label>
                   <div className="dp-format-options">
                     {QUANTIDADES.map(q => (
                       <button
@@ -1328,6 +1331,22 @@ export default function DocumentsPage() {
                         disabled={isQuickGenerating}
                       >
                         {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="dp-modal__field">
+                  <label className="dp-modal__label">Qual o nível de dificuldade?</label>
+                  <div className="dp-format-options">
+                    {DIFICULDADES.map(d => (
+                      <button
+                        key={d.value}
+                        type="button"
+                        className={`dp-format-btn${quickDificuldade === d.value ? ' dp-format-btn--selected' : ''}`}
+                        onClick={() => setQuickDificuldade(d.value)}
+                        disabled={isQuickGenerating}
+                      >
+                        {d.label}
                       </button>
                     ))}
                   </div>

@@ -880,8 +880,8 @@
 .fq-rate-btn--again { background: rgba(229,62,62,0.1);  color: #c53030; border-color: rgba(229,62,62,0.25); }
 .fq-rate-btn--hard   { background: rgba(221,107,32,0.14);  color: #b7471a; border-color: rgba(221,107,32,0.3); }
 .fq-rate-btn--medium { background: rgba(214,158,46,0.12);  color: #975a16; border-color: rgba(214,158,46,0.3); }
-.fq-rate-btn--good   { background: rgba(56,161,105,0.1);  color: #276749; border-color: rgba(56,161,105,0.25); }
-.fq-rate-btn--easy   { background: rgba(56,161,105,0.18); color: #22543d; border-color: rgba(56,161,105,0.4); }
+.fq-rate-btn--good   { background: rgba(56,161,105,0.12); color: #276749; border-color: rgba(56,161,105,0.3); }
+.fq-rate-btn--easy   { background: rgba(56,161,105,0.22); color: #22543d; border-color: rgba(56,161,105,0.45); }
 
 /* ── Seletor de dificuldade (modal de criação) ── */
 .fq-modal__difficulty {
