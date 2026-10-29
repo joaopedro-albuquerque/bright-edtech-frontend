@@ -7,6 +7,25 @@ import logo from '../assets/Logo-Edtech.png';
 import { API_BASE, TERMOS_DE_USO_VERSAO } from '../config';
 import TermsModal from '../components/TermsModal';
 
+// Marca de leitura guardada na sessão do navegador (some ao fechar a aba) e atrelada à versão do termo.
+const CHAVE_TERMOS_LIDOS = `termos_lidos_v${TERMOS_DE_USO_VERSAO}`;
+
+function termosJaLidos() {
+  try {
+    return sessionStorage.getItem(CHAVE_TERMOS_LIDOS) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function marcarTermosLidos() {
+  try {
+    sessionStorage.setItem(CHAVE_TERMOS_LIDOS, '1');
+  } catch {
+    // Sem sessionStorage (modo privado/bloqueado): vale só o estado em memória da página.
+  }
+}
+
 export default function SignUpPage() {
   const [firstName, setFirstName]   = useState('');
   const [lastName, setLastName]     = useState('');
@@ -18,6 +37,13 @@ export default function SignUpPage() {
   const [cognitoConfirmed, setCognitoConfirmed] = useState(false);
   const [aceitouTermos, setAceitouTermos] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [leuTermos, setLeuTermos] = useState(termosJaLidos);
+
+  const abrirTermos = () => {
+    marcarTermosLidos();
+    setLeuTermos(true);
+    setShowTermsModal(true);
+  };
 
   // step 1 = formulário | step 2 = confirmação de e-mail
   const [step, setStep]         = useState(1);
@@ -39,6 +65,10 @@ export default function SignUpPage() {
     e.preventDefault();
     if (!passwordValid) {
       setErrorMsg('A senha não atende a todos os requisitos.');
+      return;
+    }
+    if (!leuTermos) {
+      setErrorMsg('Abra e leia os Termos de Uso e a Política de Privacidade antes de aceitar.');
       return;
     }
     if (!aceitouTermos) {
@@ -272,18 +302,30 @@ export default function SignUpPage() {
                 )}
               </div>
 
-              <label className="su-terms-check">
+              <label
+                className={`su-terms-check${leuTermos ? '' : ' su-terms-check--locked'}`}
+                onClick={(e) => {
+                  if (!leuTermos && !e.target.closest('.su-terms-check__link')) {
+                    e.preventDefault();
+                    abrirTermos();
+                  }
+                }}
+              >
                 <input
                   type="checkbox"
                   checked={aceitouTermos}
                   onChange={(e) => setAceitouTermos(e.target.checked)}
+                  disabled={!leuTermos}
                   required
                 />
                 <span>
                   Li e aceito os{' '}
-                  <button type="button" className="su-terms-check__link" onClick={() => setShowTermsModal(true)}>
+                  <button type="button" className="su-terms-check__link" onClick={abrirTermos}>
                     Termos de Uso e a Política de Privacidade (LGPD)
                   </button>
+                  {!leuTermos && (
+                    <span className="su-terms-check__hint">Abra o documento para poder aceitar.</span>
+                  )}
                 </span>
               </label>
 
@@ -292,7 +334,7 @@ export default function SignUpPage() {
               <button
                 type="submit"
                 className={`lp-submit${isLoading ? ' lp-submit--loading' : ''}`}
-                disabled={isLoading || !aceitouTermos}
+                disabled={isLoading || !leuTermos || !aceitouTermos}
               >
                 {isLoading ? (
                   <>
