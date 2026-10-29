@@ -1317,6 +1317,7 @@ export default function DocumentsPage() {
             </div>
             <div className="dp-modal__body">
               {contentModal.tipo !== 'resumos' && (
+                <>
                 <div className="dp-modal__field">
                   <label className="dp-modal__label">
                     Quantas perguntas você deseja para esse {contentModal.tipo === 'flashcards' ? 'flashcard' : 'quiz'}?
@@ -1351,6 +1352,7 @@ export default function DocumentsPage() {
                     ))}
                   </div>
                 </div>
+                </>
               )}
               <button
                 type="button"
