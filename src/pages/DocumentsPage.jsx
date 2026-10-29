@@ -980,21 +980,21 @@ export default function DocumentsPage() {
                         className="dp-file-item__count dp-file-item__count--resumos"
                         onClick={() => openContentModal(file, 'resumos')}
                       >
-                        {counts.resumos} Resumos
+                        {counts.resumos} {counts.resumos === 1 ? CONTENT_LABELS.resumos.singular : CONTENT_LABELS.resumos.plural}
                       </button>
                       <button
                         type="button"
                         className="dp-file-item__count dp-file-item__count--flashcards"
                         onClick={() => openContentModal(file, 'flashcards')}
                       >
-                        {counts.flashcards} Flashcards
+                        {counts.flashcards} {counts.flashcards === 1 ? CONTENT_LABELS.flashcards.singular : CONTENT_LABELS.flashcards.plural}
                       </button>
                       <button
                         type="button"
                         className="dp-file-item__count dp-file-item__count--quizzes"
                         onClick={() => openContentModal(file, 'quizzes')}
                       >
-                        {counts.quizzes} Quizzes
+                        {counts.quizzes} {counts.quizzes === 1 ? CONTENT_LABELS.quizzes.singular : CONTENT_LABELS.quizzes.plural}
                       </button>
                     </div>
 
