@@ -12,6 +12,7 @@ import { NIVEIS_CONHECIMENTO, NIVEL_PADRAO, QUANTIDADES, QUANTIDADE_PADRAO, DIFI
 import { validatePdfFile } from '../utils/pdfValidation';
 import { uploadErrorFrom, getUploadErrorTitle } from '../utils/uploadErrors';
 import AlertModal from '../components/AlertModal';
+import GeneratingOverlay from '../components/GeneratingOverlay';
 
 /* ─────────────────────────────────────────────
    ÍCONES SVG INLINE
@@ -1496,6 +1497,11 @@ export default function DocumentsPage() {
       >
         {Icon.plus}
       </button>
+
+      {isGenerating && <GeneratingOverlay tipo="resumo" />}
+      {isQuickGenerating && contentModal && (
+        <GeneratingOverlay tipo={contentModal.tipo === 'flashcards' ? 'flashcard' : 'quiz'} />
+      )}
     </div>
   );
 }

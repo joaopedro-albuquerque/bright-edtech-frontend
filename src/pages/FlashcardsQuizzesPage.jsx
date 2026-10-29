@@ -6,6 +6,7 @@ import { API_BASE } from '../config';
 import StudyModal from '../components/StudyModal';
 import AIDisclaimerBanner from '../components/AIDisclaimerBanner';
 import AlertModal from '../components/AlertModal';
+import GeneratingOverlay from '../components/GeneratingOverlay';
 import { QUANTIDADES, QUANTIDADE_PADRAO } from '../constants/geracao';
 
 /* ─────────────────────────────────────────────
@@ -679,6 +680,7 @@ export default function FlashcardsQuizzesPage() {
         </div>
       )}
 
+      {isCreating && <GeneratingOverlay tipo={showModal === 'flashcard' ? 'flashcard' : 'quiz'} />}
     </div>
   );
 }

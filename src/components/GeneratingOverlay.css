@@ -1,0 +1,123 @@
+.gen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(7, 13, 72, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: genFade 0.2s ease;
+}
+
+.gen-card {
+  width: 100%;
+  max-width: 360px;
+  padding: 2rem 1.5rem 1.5rem;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(10, 21, 53, 0.3);
+  text-align: center;
+  animation: genRise 0.28s ease;
+}
+
+.gen-orb {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  margin: 0 auto 1.3rem;
+  display: grid;
+  place-items: center;
+}
+
+.gen-orb__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(74, 144, 217, 0.5);
+  opacity: 0;
+  animation: genPulse 2.4s ease-out infinite;
+}
+.gen-orb__ring:nth-child(2) { animation-delay: 0.8s; }
+.gen-orb__ring:nth-child(3) { animation-delay: 1.6s; }
+
+.gen-orb__core {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: linear-gradient(135deg, #4a90d9 0%, #8b5cf6 100%);
+  box-shadow: 0 8px 22px rgba(74, 144, 217, 0.45);
+  animation: genFloat 3s ease-in-out infinite;
+}
+
+.gen-orb__spark {
+  animation: genTwinkle 2.2s ease-in-out infinite;
+}
+
+.gen-title {
+  margin: 0 0 0.45rem;
+  font-family: 'Syne', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--lp-text-dark, #0a1535);
+}
+
+.gen-step {
+  min-height: 1.3em;
+  margin: 0 0 1.1rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.9rem;
+  color: #4a90d9;
+  font-weight: 600;
+  animation: genFade 0.4s ease;
+}
+
+.gen-bar {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(74, 144, 217, 0.15);
+  overflow: hidden;
+}
+.gen-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #4a90d9, #8b5cf6);
+  animation: genSlide 1.5s ease-in-out infinite;
+}
+
+.gen-note {
+  margin: 0.9rem 0 0;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  color: var(--lp-text-muted, #6b7280);
+}
+
+@keyframes genFade  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes genRise  { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes genPulse { 0% { transform: scale(0.62); opacity: 0.7; } 100% { transform: scale(1.15); opacity: 0; } }
+@keyframes genFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes genTwinkle { 0%, 100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.12) rotate(12deg); } }
+@keyframes genSlide { 0% { left: -40%; } 100% { left: 100%; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .gen-orb__ring,
+  .gen-orb__core,
+  .gen-orb__spark,
+  .gen-card,
+  .gen-overlay,
+  .gen-step { animation: none; }
+  .gen-orb__ring:first-child { opacity: 0.5; transform: scale(0.9); }
+  .gen-bar::after { animation: none; left: 0; width: 100%; opacity: 0.6; }
+}

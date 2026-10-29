@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import QuickUploadModal from '../components/QuickUploadModal';
 import StudyModal from '../components/StudyModal';
 import AlertModal from '../components/AlertModal';
+import GeneratingOverlay from '../components/GeneratingOverlay';
 import './OverviewPage.css';
 import { API_BASE } from '../config';
 import { RESUMO_FORMATOS } from '../constants/resumoFormatos';
@@ -514,6 +515,7 @@ export default function OverviewPage() {
         </div>
       )}
 
+      {generatingDocId && <GeneratingOverlay tipo="resumo" />}
     </div>
   );
 }
