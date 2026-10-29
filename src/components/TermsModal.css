@@ -80,16 +80,6 @@
   margin: 0 0 0.6rem;
 }
 
-.tm-disclaimer {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.75rem;
-  font-style: italic;
-  color: var(--lp-text-muted, #6b7280);
-  border-top: 1px solid rgba(10, 21, 53, 0.08);
-  padding-top: 1rem;
-  margin: 1.5rem 0 0;
-}
-
 .tm-modal__footer {
   display: flex;
   justify-content: flex-end;

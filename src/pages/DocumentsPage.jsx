@@ -517,27 +517,6 @@ export default function DocumentsPage() {
     }
   };
 
-  /* ── Visualiza um resumo já gerado (a partir da listagem) ── */
-  const viewResumo = async (item) => {
-    const originFile = contentModal?.file;
-    try {
-      const { token } = await getAuthHeaders();
-      const bankUserId = dbUserId || await getBankUserId(token);
-      const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': bankUserId };
-      const res = await fetch(`${API_BASE}/resumos/${item.id}/conteudo`, { headers });
-      if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível ler o resumo.`);
-      const data = await res.json();
-      setSummaryText(data.conteudo || 'Nenhum conteúdo de resumo.');
-      setSummaryFileName(item.titulo);
-      setSummaryResumoId(item.id);
-      setSummaryReturnTo(originFile ?? null);
-      closeContentModal();
-      setShowSummaryModal(true);
-    } catch (err) {
-      setContentModalError(err.message);
-    }
-  };
-
   /* ── Baixa o PDF de um resumo (gerado sob demanda se ainda não existir) ── */
   const downloadResumoPdf = async (resumoId) => {
     setIsDownloadingPdf(true);
@@ -1366,23 +1345,14 @@ export default function DocumentsPage() {
                           </button>
                         )}
                         {contentModal.tipo === 'resumos' && (
-                          <>
-                            <button
-                              className="dp-file-item__icon-btn"
-                              title="Visualizar"
-                              onClick={() => viewResumo(item)}
-                            >
-                              {Icon.eye}
-                            </button>
-                            <button
-                              className="dp-file-item__icon-btn"
-                              title="Baixar PDF"
-                              onClick={() => downloadResumoPdf(item.id)}
-                              disabled={isDownloadingPdf}
-                            >
-                              {Icon.download}
-                            </button>
-                          </>
+                          <button
+                            className="dp-file-item__icon-btn"
+                            title="Visualizar"
+                            onClick={() => downloadResumoPdf(item.id)}
+                            disabled={isDownloadingPdf}
+                          >
+                            {Icon.eye}
+                          </button>
                         )}
                         <button
                           className="dp-file-item__icon-btn"

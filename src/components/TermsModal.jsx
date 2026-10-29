@@ -81,11 +81,6 @@ export default function TermsModal({ onClose }) {
               conta.
             </p>
           </section>
-
-          <p className="tm-disclaimer">
-            Este documento é um modelo estrutural e deve ser revisado por um profissional
-            jurídico antes de ser considerado juridicamente vinculante.
-          </p>
         </div>
 
         <div className="tm-modal__footer">

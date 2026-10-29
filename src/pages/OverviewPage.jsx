@@ -1,11 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { Link } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import QuickUploadModal from '../components/QuickUploadModal';
 import StudyModal from '../components/StudyModal';
-import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
 import './OverviewPage.css';
 import { API_BASE } from '../config';
@@ -129,40 +126,17 @@ export default function OverviewPage() {
 
   // ── Visualização de resumo (mesmo padrão do Document Hub) ──
   const [isOpeningResumoId,  setIsOpeningResumoId]  = useState(null);
-  const [showSummaryModal,   setShowSummaryModal]   = useState(false);
-  const [summaryText,        setSummaryText]        = useState('');
-  const [summaryFileName,    setSummaryFileName]    = useState('');
-  const [summaryResumoId,    setSummaryResumoId]    = useState(null);
-  const [isDownloadingPdf,   setIsDownloadingPdf]   = useState(false);
 
   const handleViewResumo = async (item) => {
     setIsOpeningResumoId(item.id);
     try {
-      const { token } = await getAuthHeaders();
-      const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': dbUserId };
-      const res = await fetch(`${API_BASE}/resumos/${item.id}/conteudo`, { headers });
-      if (!res.ok) throw new Error(`Erro ${res.status} ao ler o resumo.`);
-      const data = await res.json();
-      setSummaryText(data.conteudo || 'Nenhum conteúdo de resumo.');
-      setSummaryFileName(item.titulo ?? 'Resumo');
-      setSummaryResumoId(item.id);
-      setShowSummaryModal(true);
-    } catch (err) {
-      setActionError(err.message);
+      await downloadResumoPdf(item.id);
     } finally {
       setIsOpeningResumoId(null);
     }
   };
 
-  const closeSummaryModal = () => {
-    setShowSummaryModal(false);
-    setSummaryText('');
-    setSummaryFileName('');
-    setSummaryResumoId(null);
-  };
-
   const downloadResumoPdf = async (resumoId) => {
-    setIsDownloadingPdf(true);
     try {
       const { token } = await getAuthHeaders();
       const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': dbUserId };
@@ -172,8 +146,6 @@ export default function OverviewPage() {
       if (data.url) window.open(data.url, '_blank');
     } catch (err) {
       setActionError(err.message);
-    } finally {
-      setIsDownloadingPdf(false);
     }
   };
 
@@ -489,30 +461,6 @@ export default function OverviewPage() {
         <StudyModal item={studyItem} tipo={studyItem.tipo} onClose={() => setStudyItem(null)} />
       )}
 
-      {/* Modal: Resumo (mesmo padrão do Document Hub) */}
-      {showSummaryModal && (
-        <Modal
-          title={`Resumo: ${summaryFileName}`}
-          className="dp-modal--summary"
-          onClose={closeSummaryModal}
-          confirmLabel="Fechar"
-          confirmDisabled={false}
-          onConfirm={closeSummaryModal}
-        >
-          {summaryResumoId && (
-            <button
-              className="dp-btn dp-btn--ghost dp-summary-download-btn"
-              onClick={() => downloadResumoPdf(summaryResumoId)}
-              disabled={isDownloadingPdf}
-            >
-              {isDownloadingPdf ? 'Gerando PDF...' : 'Baixar PDF'}
-            </button>
-          )}
-          <div className="dp-modal__summary dp-modal__summary--markdown">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{summaryText}</ReactMarkdown>
-          </div>
-        </Modal>
-      )}
 
       {/* ── Modal: escolher formato do resumo rápido ── */}
       {quickResumoTarget && (
