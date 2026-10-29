@@ -457,6 +457,18 @@
   box-shadow: 0 24px 60px rgba(7, 13, 72, 0.3);
   animation: dpSlideUp 0.25s cubic-bezier(0.22, 1, 0.36, 1) both;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 3rem);
+  max-height: calc(100dvh - 3rem);
+}
+
+.dp-modal__header,
+.dp-modal__footer { flex-shrink: 0; }
+
+@media (max-width: 480px) {
+  .dp-modal-overlay { padding: 0.75rem; }
+  .dp-modal { max-height: calc(100vh - 1.5rem); max-height: calc(100dvh - 1.5rem); }
 }
 
 .dp-modal__header {
@@ -492,6 +504,11 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .dp-modal__text {
@@ -548,7 +565,7 @@
   display: flex;
   justify-content: flex-end;
   gap: 0.65rem;
-  padding: 0 1.5rem 1.25rem;
+  padding: 0.75rem 1.5rem 1.25rem;
 }
 
 /* Upload area */
@@ -857,8 +874,6 @@
 }
 
 .dp-modal__summary--markdown {
-  max-height: 60vh;
-  overflow-y: auto;
   line-height: 1.65;
   font-size: 0.92rem;
   color: #1f2937;

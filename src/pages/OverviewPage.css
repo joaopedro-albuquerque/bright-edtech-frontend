@@ -556,8 +556,21 @@
   flex-direction: column;
   background: var(--ov-card-bg, #ffffff);
   border-radius: 14px;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  max-height: 420px;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
   box-shadow: 0 1px 3px rgba(10, 21, 53, 0.06);
+}
+
+@media (max-width: 768px) {
+  .ov-quick-resumo-list { max-height: 52vh; max-height: 52dvh; }
+}
+
+@media (max-width: 480px) {
+  .ov-quick-resumo-list { max-height: 44vh; max-height: 44dvh; }
 }
 
 .ov-quick-resumo-item {
