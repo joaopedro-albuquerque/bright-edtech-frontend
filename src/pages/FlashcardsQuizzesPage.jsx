@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import './FlashcardsQuizzesPage.css';
@@ -8,7 +8,8 @@ import AIDisclaimerBanner from '../components/AIDisclaimerBanner';
 import AlertModal from '../components/AlertModal';
 import GeneratingOverlay from '../components/GeneratingOverlay';
 import { QUANTIDADES, QUANTIDADE_PADRAO } from '../constants/geracao';
-import { mapComLimite } from '../utils/concurrency';
+import CampoBusca from '../components/CampoBusca';
+import { useDocumentosBusca } from '../hooks/useDocumentosBusca';
 
 /* ─────────────────────────────────────────────
    ÍCONES
@@ -158,16 +159,20 @@ export default function FlashcardsQuizzesPage() {
 
   // ── Modal de criação ──
   const [showModal,      setShowModal]      = useState(null); // 'flashcard' | 'quiz'
-  const [modalDocs,      setModalDocs]      = useState([]);
-  const [isLoadingDocs,  setIsLoadingDocs]  = useState(false);
-  const [isLoadingMoreDocs, setIsLoadingMoreDocs] = useState(false);
-  const cargaDocsRef = useRef(0);
+  const [termoBusca,    setTermoBusca]    = useState('');
   const [selectedDocId,  setSelectedDocId]  = useState(null);
   const [isCreating,     setIsCreating]     = useState(false);
   const [modalError,     setModalError]     = useState('');
   const [actionError,    setActionError]    = useState(null);
   const [selectedDificuldade, setSelectedDificuldade] = useState('medio');
   const [selectedQuantidade, setSelectedQuantidade] = useState(QUANTIDADE_PADRAO);
+
+  const montarHeaders = useCallback(async () => {
+    const { token } = await getAuthHeaders();
+    const id = dbUserId || await getDbUserId(token);
+    return { Authorization: `Bearer ${token}`, 'X-User-Id': id };
+  }, [dbUserId]);
+  const busca = useDocumentosBusca({ termo: termoBusca, ativo: !!showModal, getHeaders: montarHeaders });
 
   // ── Modal de estudo ──
   const [studyItem, setStudyItem] = useState(null); // { id, titulo, tipo }
@@ -233,48 +238,14 @@ export default function FlashcardsQuizzesPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  /* ── Abre o modal e carrega os documentos do usuário ── */
-  const openModal = async (type) => {
+  /* ── Abre o modal; a lista de documentos vem da busca no servidor ── */
+  const openModal = (type) => {
     setShowModal(type);
     setSelectedDocId(null);
     setModalError('');
-    setModalDocs([]);
+    setTermoBusca('');
     setSelectedDificuldade('medio');
     setSelectedQuantidade(QUANTIDADE_PADRAO);
-    setIsLoadingDocs(true);
-    setIsLoadingMoreDocs(false);
-    const carga = ++cargaDocsRef.current;
-    try {
-      const { token } = await getAuthHeaders();
-      const id = dbUserId || await getDbUserId(token);
-      const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': id };
-
-      const foldersRes = await fetch(`${API_BASE}/pastas/user/${id}/todas`, { headers });
-      if (!foldersRes.ok) throw new Error('Erro ao carregar documentos.');
-      const folders = await foldersRes.json();
-
-      if (folders.length === 0) { setModalDocs([]); return; }
-
-      // Mostra os documentos conforme cada pasta responde, sem esperar todas (a conta pode ter muitas pastas).
-      setIsLoadingDocs(false);
-      setIsLoadingMoreDocs(true);
-      await mapComLimite(folders, 8, async (f) => {
-        const arquivos = await fetch(`${API_BASE}/pastas/${f.id}/conteudo?limit=50&offset=0`, { headers })
-          .then(r => r.ok ? r.json() : { arquivos: [] })
-          .then(data => data.arquivos || [])
-          .catch(() => []);
-        if (carga === cargaDocsRef.current && arquivos.length > 0) {
-          setModalDocs(prev => [...prev, ...arquivos]);
-        }
-      });
-    } catch (err) {
-      setModalError(err.message);
-    } finally {
-      if (carga === cargaDocsRef.current) {
-        setIsLoadingDocs(false);
-        setIsLoadingMoreDocs(false);
-      }
-    }
   };
 
   /* ── Confirma seleção e gera via Bedrock ── */
@@ -549,36 +520,66 @@ export default function FlashcardsQuizzesPage() {
               </button>
             </div>
 
+            <div className="fq-modal__search">
+              <CampoBusca
+                valor={termoBusca}
+                onChange={setTermoBusca}
+                placeholder="Buscar documento pelo nome…"
+                ariaLabel="Buscar documento"
+              />
+            </div>
+
             <div className="fq-modal__body">
-              {isLoadingDocs || (isLoadingMoreDocs && modalDocs.length === 0) ? (
+              {busca.carregando && busca.itens.length === 0 ? (
                 <div className="fq-modal__loading">
                   {Icon.spinner}
-                  Carregando documentos...
+                  {busca.termoAplicado ? 'Buscando...' : 'Carregando documentos...'}
                 </div>
-              ) : modalDocs.length === 0 && !modalError ? (
+              ) : busca.erro ? (
+                <p className="fq-modal__error">{busca.erro}</p>
+              ) : busca.itens.length === 0 ? (
                 <div className="fq-modal__empty">
-                  Nenhum documento disponível. Faça upload de um arquivo em <strong>Gestão de Documentos</strong> primeiro.
+                  {busca.termoAplicado ? (
+                    <>Nenhum documento encontrado para <strong>“{busca.termoAplicado}”</strong>.</>
+                  ) : (
+                    <>Nenhum documento disponível. Faça upload de um arquivo em <strong>Gestão de Documentos</strong> primeiro.</>
+                  )}
                 </div>
               ) : (
-                <ul className="fq-modal__list">
-                  {modalDocs.map(doc => (
-                    <li key={doc.id}>
-                      <button
-                        className={`fq-modal__doc${selectedDocId === doc.id ? ' fq-modal__doc--selected' : ''}`}
-                        onClick={() => setSelectedDocId(doc.id)}
-                      >
-                        <span className="fq-modal__doc-icon">{Icon.file}</span>
-                        <span className="fq-modal__doc-name">{doc.nome}</span>
-                        {selectedDocId === doc.id && (
-                          <span className="fq-modal__doc-check">{Icon.check}</span>
-                        )}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {isLoadingMoreDocs && modalDocs.length > 0 && (
-                <p className="fq-modal__loading-more">{Icon.spinner} Carregando mais documentos...</p>
+                <>
+                  <p className="fq-modal__count" aria-live="polite">
+                    {busca.total} {busca.total === 1 ? 'documento' : 'documentos'}
+                  </p>
+                  <ul className={`fq-modal__list${busca.carregando ? ' fq-modal__list--stale' : ''}`}>
+                    {busca.itens.map(doc => (
+                      <li key={doc.id}>
+                        <button
+                          className={`fq-modal__doc${selectedDocId === doc.id ? ' fq-modal__doc--selected' : ''}`}
+                          onClick={() => setSelectedDocId(doc.id)}
+                        >
+                          <span className="fq-modal__doc-icon">{Icon.file}</span>
+                          <span className="fq-modal__doc-text">
+                            <span className="fq-modal__doc-name">{doc.nome}</span>
+                            {doc.pasta_nome && <span className="fq-modal__doc-folder">{doc.pasta_nome}</span>}
+                          </span>
+                          {selectedDocId === doc.id && (
+                            <span className="fq-modal__doc-check">{Icon.check}</span>
+                          )}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  {busca.temMais && (
+                    <button
+                      type="button"
+                      className="fq-modal__more"
+                      onClick={busca.carregarMais}
+                      disabled={busca.carregandoMais}
+                    >
+                      {busca.carregandoMais ? <>{Icon.spinner} Carregando...</> : 'Carregar mais'}
+                    </button>
+                  )}
+                </>
               )}
               {modalError && <p className="fq-modal__error">{modalError}</p>}
             </div>
@@ -627,7 +628,7 @@ export default function FlashcardsQuizzesPage() {
               </button>
               <button
                 className={`fq-btn fq-btn--primary${isCreating ? ' fq-btn--loading' : ''}`}
-                disabled={!selectedDocId || isCreating || isLoadingDocs}
+                disabled={!selectedDocId || isCreating}
                 onClick={handleCreate}
               >
                 {isCreating ? <>{Icon.spinner} Gerando com IA...</> : 'Confirmar'}

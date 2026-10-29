@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { Link } from 'react-router-dom';
 import QuickUploadModal from '../components/QuickUploadModal';
@@ -9,6 +9,10 @@ import './OverviewPage.css';
 import { API_BASE } from '../config';
 import { RESUMO_FORMATOS } from '../constants/resumoFormatos';
 import { NIVEIS_CONHECIMENTO, NIVEL_PADRAO } from '../constants/geracao';
+import CampoBusca from '../components/CampoBusca';
+import { useDocumentosBusca } from '../hooks/useDocumentosBusca';
+
+const PdfViewer = lazy(() => import('../components/PdfViewer'));
 
 /* ─────────────────────────────────────────────
    ÍCONES SVG INLINE
@@ -126,32 +130,20 @@ export default function OverviewPage() {
   // ── Abrir flashcard/quiz a partir da atividade recente ──
   const [studyItem, setStudyItem] = useState(null); // { id, titulo, tipo }
 
-  // ── Visualização de resumo (mesmo padrão do Document Hub) ──
-  const [isOpeningResumoId,  setIsOpeningResumoId]  = useState(null);
+  // ── Visualizador de PDF (resumos) ──
+  const [visualizador, setVisualizador] = useState(null); // { titulo, path }
+  const handleViewResumo = (item) => setVisualizador({ titulo: item.nome, path: `/resumos/${item.id}/pdf` });
 
-  const handleViewResumo = async (item) => {
-    setIsOpeningResumoId(item.id);
-    try {
-      await downloadResumoPdf(item.id);
-    } finally {
-      setIsOpeningResumoId(null);
-    }
-  };
+  const montarHeaders = useCallback(async () => {
+    const { token } = await getAuthHeaders();
+    return { Authorization: `Bearer ${token}`, 'X-User-Id': dbUserId };
+  }, [dbUserId]);
 
-  const downloadResumoPdf = async (resumoId) => {
-    try {
-      const { token } = await getAuthHeaders();
-      const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': dbUserId };
-      const res = await fetch(`${API_BASE}/resumos/${resumoId}/download`, { headers });
-      if (!res.ok) throw new Error(`Erro ${res.status} ao gerar o PDF.`);
-      const data = await res.json();
-      if (data.url) window.open(data.url, '_blank');
-    } catch (err) {
-      setActionError(err.message);
-    }
-  };
+  // ── Busca nos documentos do atalho "gerar resumo" ──
+  const [termoResumo, setTermoResumo] = useState('');
+  const buscaDocs = useDocumentosBusca({ termo: termoResumo, ativo: true, getHeaders: montarHeaders, somenteComTermo: true });
+  const buscandoDocs = termoResumo.trim() !== '';
 
-  /* ── Carrega o dashboard da API ── */
   const loadDashboard = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -356,11 +348,32 @@ export default function OverviewPage() {
       </section>
 
       {/* ── Atalho: gerar resumo dos últimos documentos ── */}
-      {documentos_recentes.length > 0 && (
+      {(documentos_recentes.length > 0 || buscandoDocs) && (
         <section aria-label="Gerar resumo rápido">
           <h2 className="ov-section-title">Gerar resumo rápido</h2>
-          <ul className="ov-quick-resumo-list" role="list">
-            {documentos_recentes.slice(0, 10).map((doc) => {
+          <CampoBusca
+            className="ov-quick-search"
+            valor={termoResumo}
+            onChange={setTermoResumo}
+            placeholder="Buscar documento pelo nome…"
+            ariaLabel="Buscar documento para gerar resumo"
+          />
+          {buscandoDocs && buscaDocs.carregando && buscaDocs.itens.length === 0 && (
+            <p className="ov-quick-status">Buscando…</p>
+          )}
+          {buscandoDocs && !buscaDocs.carregando && buscaDocs.erro && (
+            <p className="ov-quick-status ov-quick-status--erro">{buscaDocs.erro}</p>
+          )}
+          {buscandoDocs && !buscaDocs.carregando && !buscaDocs.erro && buscaDocs.itens.length === 0 && (
+            <p className="ov-quick-status">Nenhum documento encontrado para <strong>“{buscaDocs.termoAplicado}”</strong>.</p>
+          )}
+          {buscandoDocs && buscaDocs.itens.length > 0 && (
+            <p className="ov-quick-status" aria-live="polite">
+              {buscaDocs.total} {buscaDocs.total === 1 ? 'documento encontrado' : 'documentos encontrados'}
+            </p>
+          )}
+          <ul className={`ov-quick-resumo-list${buscandoDocs && buscaDocs.carregando ? ' ov-quick-resumo-list--stale' : ''}`} role="list">
+            {(buscandoDocs ? buscaDocs.itens : documentos_recentes.slice(0, 10)).map((doc) => {
               const isGenerating = generatingDocId === doc.id;
               const msg = quickResumoMsg?.docId === doc.id ? quickResumoMsg : null;
               return (
@@ -385,6 +398,16 @@ export default function OverviewPage() {
               );
             })}
           </ul>
+          {buscandoDocs && buscaDocs.temMais && (
+            <button
+              type="button"
+              className="ov-quick-more"
+              onClick={buscaDocs.carregarMais}
+              disabled={buscaDocs.carregandoMais}
+            >
+              {buscaDocs.carregandoMais ? 'Carregando…' : 'Carregar mais'}
+            </button>
+          )}
         </section>
       )}
 
@@ -428,10 +451,9 @@ export default function OverviewPage() {
               <ActivityItem
                 key={item.id}
                 title={item.titulo ?? item.nome ?? 'Resumo'}
-                meta={isOpeningResumoId === item.id ? 'Abrindo...' : formatDate(item.criado_em)}
+                meta={formatDate(item.criado_em)}
                 icon={Icon.clock}
                 onClick={() => handleViewResumo(item)}
-                disabled={isOpeningResumoId === item.id}
               />
             ))}
           </ActivityPanel>
@@ -516,6 +538,16 @@ export default function OverviewPage() {
       )}
 
       {generatingDocId && <GeneratingOverlay tipo="resumo" />}
+      {visualizador && (
+        <Suspense fallback={null}>
+          <PdfViewer
+            titulo={visualizador.titulo}
+            path={visualizador.path}
+            getHeaders={montarHeaders}
+            onClose={() => setVisualizador(null)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

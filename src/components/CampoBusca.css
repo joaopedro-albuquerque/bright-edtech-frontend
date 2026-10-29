@@ -1,0 +1,53 @@
+.cb-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.cb-icon {
+  position: absolute;
+  left: 0.85rem;
+  color: var(--lp-text-muted, #6b7280);
+  pointer-events: none;
+}
+
+.cb-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.62rem 2.2rem 0.62rem 2.4rem;
+  border: 1.5px solid rgba(10, 21, 53, 0.14);
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--lp-text-dark, #0a1535);
+  font-family: 'DM Sans', sans-serif;
+  /* 16px evita o zoom automático do Safari no iPhone ao focar o campo */
+  font-size: 16px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.cb-input::placeholder { color: #9aa3b5; }
+.cb-input:focus {
+  outline: none;
+  border-color: #4a90d9;
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.2);
+}
+.cb-input::-webkit-search-cancel-button { display: none; }
+
+.cb-clear {
+  position: absolute;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(10, 21, 53, 0.07);
+  color: var(--lp-text-muted, #6b7280);
+  cursor: pointer;
+}
+.cb-clear:hover { background: rgba(10, 21, 53, 0.14); }

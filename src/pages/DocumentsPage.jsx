@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import ReactMarkdown from 'react-markdown';
 import AIDisclaimerBanner from '../components/AIDisclaimerBanner';
@@ -13,6 +13,8 @@ import { validatePdfFile } from '../utils/pdfValidation';
 import { uploadErrorFrom, getUploadErrorTitle } from '../utils/uploadErrors';
 import AlertModal from '../components/AlertModal';
 import GeneratingOverlay from '../components/GeneratingOverlay';
+
+const PdfViewer = lazy(() => import('../components/PdfViewer'));
 
 /* ─────────────────────────────────────────────
    ÍCONES SVG INLINE
@@ -163,7 +165,7 @@ export default function DocumentsPage() {
   const [summaryText, setSummaryText] = useState('');
   const [summaryFileName, setSummaryFileName] = useState('');
   const [summaryResumoId, setSummaryResumoId] = useState(null);
-  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [visualizador, setVisualizador] = useState(null); // { titulo, path }
   const [newSummaryTarget, setNewSummaryTarget] = useState(null); // file
   const [newSummaryFormat, setNewSummaryFormat] = useState('cornell');
   const [newSummaryNivel, setNewSummaryNivel] = useState(NIVEL_PADRAO);
@@ -522,23 +524,15 @@ export default function DocumentsPage() {
     }
   };
 
-  /* ── Baixa o PDF de um resumo (gerado sob demanda se ainda não existir) ── */
-  const downloadResumoPdf = async (resumoId) => {
-    setIsDownloadingPdf(true);
-    try {
-      const { token } = await getAuthHeaders();
-      const bankUserId = dbUserId || await getBankUserId(token);
-      const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': bankUserId };
-      const res = await fetch(`${API_BASE}/resumos/${resumoId}/download`, { headers });
-      if (!res.ok) throw new Error(`Erro ${res.status}: não foi possível gerar o PDF.`);
-      const data = await res.json();
-      if (data.url) window.open(data.url, '_blank');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsDownloadingPdf(false);
-    }
+  /* ── Visualizador de PDF: resumos e documento original abrem no app ── */
+  const montarHeaders = async () => {
+    const { token } = await getAuthHeaders();
+    const bankUserId = dbUserId || await getBankUserId(token);
+    return { Authorization: `Bearer ${token}`, 'X-User-Id': bankUserId };
   };
+
+  const visualizarResumoPdf = (resumoId, titulo) =>
+    setVisualizador({ titulo: titulo || 'Resumo', path: `/resumos/${resumoId}/pdf` });
 
   /* ─────────────────────────────────────────
      LISTAGEM POR TIPO (resumos/flashcards/quizzes de um documento)
@@ -670,42 +664,8 @@ export default function DocumentsPage() {
   /* ─────────────────────────────────────────
      ABRIR DOCUMENTO (Visualização Segura)
   ───────────────────────────────────────── */
-  const handleOpenDocument = async (file) => {
-    try {
-      const { token } = await getAuthHeaders();
-      
-      // Enviando a requisição com o cabeçalho 'X-User-Id' que estava no Swagger
-      const res = await fetch(`${API_BASE}/documentos/${file.id}/url-visualizacao`, {
-        method: 'GET',
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'X-User-Id': dbUserId // Passando o ID do banco que você já salvou no estado!
-        }
-      });
-
-      // Se der erro, agora nós vamos ler exatamente o que o Python reclamou
-      if (!res.ok) {
-        const errorBody = await res.text();
-        throw new Error(`Status ${res.status}: ${errorBody}`);
-      }
-
-      const data = await res.json();
-      
-      // Procura a URL na resposta do Back-end
-      const urlFinal = data.url || data.url_visualizacao || data.link || Object.values(data)[0];
-
-      if (urlFinal && typeof urlFinal === 'string') {
-        window.open(urlFinal, '_blank');
-      } else {
-        throw new Error('O servidor não enviou a URL. Resposta: ' + JSON.stringify(data));
-      }
-
-    } catch (err) {
-      // O alert agora vai mostrar o código do erro e a mensagem real do servidor
-      alert(`Detalhes do erro: ${err.message}`);
-      console.error(err);
-    }
-  };
+  const handleOpenDocument = (file) =>
+    setVisualizador({ titulo: file.nome_documento ?? file.nome, path: `/documentos/${file.id}/arquivo` });
 
   /* ─────────────────────────────────────────
      4. UPLOAD DE DOCUMENTO
@@ -1247,10 +1207,9 @@ export default function DocumentsPage() {
           {summaryResumoId && (
             <button
               className="dp-btn dp-btn--ghost dp-summary-download-btn"
-              onClick={() => downloadResumoPdf(summaryResumoId)}
-              disabled={isDownloadingPdf}
+              onClick={() => visualizarResumoPdf(summaryResumoId, `Resumo: ${summaryFileName}`)}
             >
-              {isDownloadingPdf ? 'Gerando PDF...' : 'Baixar PDF'}
+              Abrir em PDF
             </button>
           )}
           <div className="dp-modal__summary dp-modal__summary--markdown">
@@ -1411,8 +1370,7 @@ export default function DocumentsPage() {
                           <button
                             className="dp-file-item__icon-btn"
                             title="Visualizar"
-                            onClick={() => downloadResumoPdf(item.id)}
-                            disabled={isDownloadingPdf}
+                            onClick={() => visualizarResumoPdf(item.id, item.titulo)}
                           >
                             {Icon.eye}
                           </button>
@@ -1499,6 +1457,16 @@ export default function DocumentsPage() {
       </button>
 
       {isGenerating && <GeneratingOverlay tipo="resumo" />}
+      {visualizador && (
+        <Suspense fallback={null}>
+          <PdfViewer
+            titulo={visualizador.titulo}
+            path={visualizador.path}
+            getHeaders={montarHeaders}
+            onClose={() => setVisualizador(null)}
+          />
+        </Suspense>
+      )}
       {isQuickGenerating && contentModal && (
         <GeneratingOverlay tipo={contentModal.tipo === 'flashcards' ? 'flashcard' : 'quiz'} />
       )}
