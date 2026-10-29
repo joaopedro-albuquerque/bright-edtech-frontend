@@ -1019,7 +1019,25 @@
   .fq-modal { max-width: 100%; }
   .fq-modal__footer { flex-wrap: wrap; }
 
-  .fq-study__nav { gap: 0.4rem; }
+  .fq-modal--study { max-height: 92vh; max-height: 92dvh; }
+  .fq-modal--study .fq-modal__header { padding: 0.9rem 1rem 0.7rem; }
+  .fq-modal--study .ai-disclaimer { font-size: 0.7rem; padding: 0.4rem 0.6rem; line-height: 1.35; }
+  .fq-study__body { padding: 1rem; }
+  .fq-flashcard__inner { min-height: 150px; }
+  .fq-flashcard__front,
+  .fq-flashcard__back { padding: 1rem; }
+  .fq-flashcard__text { font-size: 0.95rem; line-height: 1.5; }
+  .fq-study__nav { gap: 0.4rem; padding: 0.75rem 1rem 1rem; }
+  .fq-rate__hint { display: none; }
+  .fq-study__nav-row { gap: 0.4rem; }
+  .fq-study__nav-row .fq-btn {
+    flex: 1;
+    min-width: 0;
+    justify-content: center;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    font-size: 0.82rem;
+  }
   .fq-rate-bar { justify-content: space-between; }
   .fq-rate-bar { gap: 0.3rem; }
   .fq-rate-btn { padding: 0.45rem 0.15rem; font-size: 0.66rem; text-align: center; }

@@ -537,12 +537,6 @@
 }
 
 @media (max-width: 768px) {
-  .ov-metrics-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .ov-metrics-grid .ov-metric:last-child {
-    grid-column: 1 / -1;
-  }
   .ov-activity-grid {
     grid-template-columns: 1fr;
   }
@@ -727,6 +721,10 @@
   line-height: 1.5;
 }
 
+.ov-format-modal__description + .ov-format-modal__label {
+  margin-top: 1.1rem;
+}
+
 .ov-format-modal__footer {
   display: flex;
   justify-content: flex-end;
@@ -756,11 +754,8 @@
 }
 
 @media (max-width: 480px) {
-  .ov-metrics-grid {
-    grid-template-columns: 1fr;
-  }
-  .ov-metrics-grid .ov-metric:last-child {
-    grid-column: auto;
-  }
-  .ov-metric__value { font-size: 1.8rem; }
+  .ov-metrics-grid { gap: 0.5rem; }
+  .ov-metric { padding: 0.85rem 0.75rem; min-width: 0; }
+  .ov-metric__value { font-size: 1.5rem; }
+  .ov-metric__label { font-size: 0.72rem; }
 }
