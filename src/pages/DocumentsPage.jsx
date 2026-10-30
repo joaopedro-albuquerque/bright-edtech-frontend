@@ -16,6 +16,8 @@ import GeneratingOverlay from '../components/GeneratingOverlay';
 import CampoBusca from '../components/CampoBusca';
 import OpcoesGeracaoItens from '../components/OpcoesGeracaoItens';
 import { useDocumentosBusca } from '../hooks/useDocumentosBusca';
+import SeletorPasta from '../components/SeletorPasta';
+import { montarArvore, buscarPastas, formatarCaminho } from '../utils/arvorePastas';
 
 const PdfViewer = lazy(() => import('../components/PdfViewer'));
 
@@ -158,7 +160,9 @@ export default function DocumentsPage() {
   const [deleteTarget, setDeleteTarget] = useState(null);   // { id, nome }
 
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadFolderId, setUploadFolderId] = useState(null);
+  const [uploadDestino, setUploadDestino] = useState(null); // { modo: 'existente', id } | { modo: 'nova', paiId }
+  const [uploadNovaPasta, setUploadNovaPasta] = useState('');
+  const [todasPastas, setTodasPastas] = useState([]);
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadName, setUploadName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -217,6 +221,20 @@ export default function DocumentsPage() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
+  /* Lista completa de pastas (busca de pastas e seletor do upload) */
+  const carregarTodasPastas = useCallback(async (id) => {
+    if (!id) return;
+    try {
+      const { token } = await getAuthHeaders();
+      const res = await fetch(`${API_BASE}/pastas/user/${id}/todas`, {
+        headers: { Authorization: `Bearer ${token}`, 'X-User-Id': id },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setTodasPastas(Array.isArray(data) ? data : []);
+    } catch { /* a busca de documentos continua funcionando */ }
+  }, []);
+
   /* ─────────────────────────────────────────
      1. LISTAR PASTAS RAIZ
   ───────────────────────────────────────── */
@@ -229,6 +247,7 @@ export default function DocumentsPage() {
 
       if (!bankUserId) throw new Error('Não foi possível obter o ID do usuário.');
       setDbUserId(bankUserId);
+      carregarTodasPastas(bankUserId);
 
       const res = await fetch(
         `${API_BASE}/pastas/user/${bankUserId}?limit=50&offset=0`,
@@ -243,10 +262,11 @@ export default function DocumentsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [carregarTodasPastas]);
 
   /* Carrega na montagem */
   useEffect(() => { loadRootFolders(); }, [loadRootFolders]);
+
 
   /* ─────────────────────────────────────────
      3. ENTRAR EM UMA PASTA
@@ -308,6 +328,23 @@ export default function DocumentsPage() {
     const ok = await loadFolderContent({ id: crumb.id, nome: crumb.nome });
     if (ok) {
       setBreadcrumb(trail);
+    }
+  };
+
+  /* ── Abre uma pasta encontrada na busca, montando o rastro completo ── */
+  const abrirPastaDaBusca = async (pastaId) => {
+    const arvore = montarArvore(todasPastas);
+    const trilha = [];
+    let atual = arvore.porId.get(pastaId);
+    while (atual && trilha.length < 30) {
+      trilha.unshift({ id: atual.id, nome: atual.nome });
+      atual = atual.pasta_pai_id ? arvore.porId.get(atual.pasta_pai_id) : null;
+    }
+    if (trilha.length === 0) return;
+    const ok = await loadFolderContent(trilha[trilha.length - 1]);
+    if (ok) {
+      setBreadcrumb(trilha);
+      setTermoBusca('');
     }
   };
 
@@ -539,6 +576,7 @@ export default function DocumentsPage() {
   };
 
   const buscando = termoBusca.trim() !== '';
+  const pastasEncontradas = buscando ? buscarPastas(montarArvore(todasPastas), termoBusca) : [];
   const busca = useDocumentosBusca({ termo: termoBusca, ativo: true, getHeaders: montarHeaders, somenteComTermo: true });
 
   const visualizarResumoPdf = (resumoId, titulo) =>
@@ -715,14 +753,53 @@ export default function DocumentsPage() {
   /* ─────────────────────────────────────────
      4. UPLOAD DE DOCUMENTO
   ───────────────────────────────────────── */
+  const criandoPasta = uploadDestino?.modo === 'nova';
+  const podeEnviar = !!uploadFile
+    && (criandoPasta ? uploadNovaPasta.trim().length > 0 : uploadDestino?.modo === 'existente');
+  const paiDaNova = criandoPasta && uploadDestino.paiId
+    ? formatarCaminho(montarArvore(todasPastas).caminhoDe(uploadDestino.paiId))
+    : 'Início';
+
+  const abrirUpload = () => {
+    setUploadDestino(currentFolderId ? { modo: 'existente', id: currentFolderId } : null);
+    setShowUploadModal(true);
+    carregarTodasPastas(dbUserId);
+  };
+
+  const fecharUpload = () => {
+    setShowUploadModal(false);
+    setUploadDestino(null);
+    setUploadNovaPasta('');
+    setUploadFile(null);
+    setUploadName('');
+  };
+
   const uploadDocument = async () => {
-    if (!uploadFile || !uploadFolderId) return;
+    if (!podeEnviar) return;
     setIsUploading(true);
     try {
       const { token } = await getAuthHeaders();
       const bankUserId = await getBankUserId(token);
 
       if (!bankUserId) throw new Error('Não foi possível obter o ID do usuário.');
+
+      let uploadFolderId = uploadDestino.id;
+      if (criandoPasta) {
+        const resPasta = await fetch(`${API_BASE}/pastas`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'X-User-Id': bankUserId,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ nome: uploadNovaPasta.trim(), pasta_pai_id: uploadDestino.paiId ?? null }),
+        });
+        if (!resPasta.ok) throw new Error('Não foi possível criar a pasta.');
+        const nova = await resPasta.json();
+        uploadFolderId = nova.id;
+        if ((uploadDestino.paiId ?? null) === currentFolderId) setFolders((prev) => [nova, ...prev]);
+        carregarTodasPastas(dbUserId);
+      }
 
       const formData = new FormData();
       formData.append('documento', uploadFile);
@@ -742,10 +819,7 @@ export default function DocumentsPage() {
       if (uploadFolderId === currentFolderId) {
         setFiles((prev) => [novoArquivo, ...prev]);
       }
-      setShowUploadModal(false);
-      setUploadFolderId(null);
-      setUploadFile(null);
-      setUploadName('');
+      fecharUpload();
       window.dispatchEvent(new CustomEvent('brightedtech:docs-tour-unlock'));
     } catch (err) {
       setUploadAlert({ title: err.title || getUploadErrorTitle(), message: err.message });
@@ -785,7 +859,7 @@ export default function DocumentsPage() {
           <button
             className="dp-btn dp-btn--upload"
             data-tour="dp-upload"
-            onClick={() => { setUploadFolderId(currentFolderId); setShowUploadModal(true); }}
+            onClick={abrirUpload}
           >
             {Icon.upload}
             Enviar arquivo
@@ -806,17 +880,42 @@ export default function DocumentsPage() {
         <CampoBusca
           valor={termoBusca}
           onChange={setTermoBusca}
-          placeholder="Buscar documento em todas as pastas…"
-          ariaLabel="Buscar documento"
+          placeholder="Buscar pasta ou documento…"
+          ariaLabel="Buscar pasta ou documento"
         />
       </div>
 
       {buscando && (
         <section className="dp-section dp-search-results" aria-label="Resultados da busca">
+          {pastasEncontradas.length > 0 && (
+            <>
+              <p className="dp-search-status" aria-live="polite">
+                {pastasEncontradas.length} {pastasEncontradas.length === 1 ? 'pasta encontrada' : 'pastas encontradas'}
+              </p>
+              <ul className="dp-search-list dp-search-list--pastas" role="list">
+                {pastasEncontradas.slice(0, 20).map(({ pasta, caminho }) => (
+                  <li key={pasta.id} className="dp-search-item">
+                    <button type="button" className="dp-search-folder" onClick={() => abrirPastaDaBusca(pasta.id)}>
+                      <span className="dp-search-folder__icon">{Icon.folder}</span>
+                      <span className="dp-search-item__info">
+                        <span className="dp-search-item__name" title={pasta.nome}>{pasta.nome}</span>
+                        {caminho.length > 1 && (
+                          <span className="dp-search-item__path">{formatarCaminho(caminho.slice(0, -1))}</span>
+                        )}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {pastasEncontradas.length > 20 && (
+                <p className="dp-search-status">Mostrando as 20 primeiras. Refine a busca para ver as demais.</p>
+              )}
+            </>
+          )}
           {busca.carregando && busca.itens.length === 0 && <p className="dp-search-status">Buscando…</p>}
           {!busca.carregando && busca.erro && <p className="dp-search-status dp-search-status--erro">{busca.erro}</p>}
-          {!busca.carregando && !busca.erro && busca.itens.length === 0 && (
-            <p className="dp-search-status">Nenhum documento encontrado para <strong>“{busca.termoAplicado}”</strong>.</p>
+          {!busca.carregando && !busca.erro && busca.itens.length === 0 && pastasEncontradas.length === 0 && (
+            <p className="dp-search-status">Nenhuma pasta ou documento encontrado para <strong>“{busca.termoAplicado}”</strong>.</p>
           )}
           {busca.itens.length > 0 && (
             <p className="dp-search-status" aria-live="polite">
@@ -1178,27 +1277,29 @@ export default function DocumentsPage() {
       {showUploadModal && (
         <Modal
           title="Enviar arquivo"
-          onClose={() => { setShowUploadModal(false); setUploadFolderId(null); setUploadFile(null); setUploadName(''); }}
+          onClose={fecharUpload}
           onConfirm={uploadDocument}
           confirmLabel="Enviar"
           isLoading={isUploading}
-          confirmDisabled={!uploadFile || !uploadFolderId}
+          confirmDisabled={!podeEnviar}
         >
-          {/* Seletor de pasta — só aparece quando não há pasta selecionada */}
-          {!currentFolderId && (
+          <div className="dp-modal__field">
+            <span className="dp-modal__label">Pasta de destino</span>
+            <SeletorPasta pastas={todasPastas} valor={uploadDestino} onChange={setUploadDestino} permitirNova />
+          </div>
+          {criandoPasta && (
             <div className="dp-modal__field">
-              <label className="dp-modal__label" htmlFor="upload-folder">Pasta de destino</label>
-              <select
-                id="upload-folder"
+              <label className="dp-modal__label" htmlFor="upload-nova-pasta">Nome da nova pasta</label>
+              <input
+                id="upload-nova-pasta"
                 className="dp-modal__input"
-                value={uploadFolderId || ''}
-                onChange={(e) => setUploadFolderId(e.target.value || null)}
-              >
-                <option value="">Selecione uma pasta...</option>
-                {folders.map((f) => (
-                  <option key={f.id} value={f.id}>{f.nome}</option>
-                ))}
-              </select>
+                type="text"
+                value={uploadNovaPasta}
+                onChange={(e) => setUploadNovaPasta(e.target.value)}
+                placeholder="Ex: Biologia - 3º Ano"
+                autoFocus
+              />
+              <p className="dp-modal__hint">Será criada em: {paiDaNova}</p>
             </div>
           )}
           <div className="dp-modal__field">
