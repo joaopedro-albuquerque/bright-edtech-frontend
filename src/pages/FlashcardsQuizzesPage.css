@@ -1107,3 +1107,69 @@
   font-size: 0.78rem;
   color: var(--lp-text-muted, #6b7280);
 }
+
+/* ── Grupos por documento na Revisão Geral ── */
+.fq-group { list-style: none; }
+
+.fq-group__header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  color: var(--lp-text-dark, #0a1535);
+}
+
+.fq-group__chevron {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--lp-text-muted, #6b7280);
+  transition: transform 0.2s ease;
+}
+.fq-group__chevron--open { transform: rotate(90deg); }
+
+.fq-group__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.fq-group__name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fq-group__folder {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  color: var(--lp-text-muted, #6b7280);
+  overflow-wrap: anywhere;
+}
+.fq-group__folder svg { flex-shrink: 0; }
+
+.fq-group__count {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  color: var(--lp-text-muted, #6b7280);
+  white-space: nowrap;
+}
+
+.fq-group__list {
+  margin: 0.5rem 0 0.25rem;
+  padding-left: 0.75rem;
+}

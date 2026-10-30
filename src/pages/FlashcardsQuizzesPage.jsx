@@ -46,6 +46,11 @@ const Icon = {
       <path d="M3 8l3.5 3.5L13 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   ),
+  folder: (
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M2 4.5A1.5 1.5 0 0 1 3.5 3h2.6l1.5 1.7h5.4A1.5 1.5 0 0 1 14.5 6.2v6.3A1.5 1.5 0 0 1 13 14H3.5A1.5 1.5 0 0 1 2 12.5v-8Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+    </svg>
+  ),
   clock: (
     <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
       <circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" strokeWidth="1.3"/>
@@ -124,12 +129,24 @@ async function getDbUserId(token) {
   return profile.id;
 }
 
-function parseConteudo(c) {
-  if (!c) return {};
-  if (typeof c === 'string') {
-    try { return JSON.parse(c); } catch { return {}; }
+const ordemDocumento = new Intl.Collator('pt-BR', { sensitivity: 'base', numeric: true });
+
+/* Agrupa os lotes pelo documento de origem, em ordem alfabética */
+function agruparPorDocumento(lotes) {
+  const grupos = new Map();
+  for (const lote of lotes) {
+    const chave = lote.documento_id ?? 'sem-documento';
+    if (!grupos.has(chave)) {
+      grupos.set(chave, {
+        chave,
+        nome: lote.documento_nome ?? 'Documento removido',
+        pasta: lote.pasta_caminho ?? null,
+        lotes: [],
+      });
+    }
+    grupos.get(chave).lotes.push(lote);
   }
-  return c;
+  return [...grupos.values()].sort((a, b) => ordemDocumento.compare(a.nome, b.nome));
 }
 
 function formatDate(iso) {
@@ -146,9 +163,7 @@ export default function FlashcardsQuizzesPage() {
   // ── Dados principais ──
   const [flashcards,    setFlashcards]    = useState([]);
   const [quizzes,       setQuizzes]       = useState([]);
-  const [dueIds,        setDueIds]        = useState(new Set());
-  const [revCards,      setRevCards]      = useState([]);   // itens de revisão com conteúdo
-  const [totals,        setTotals]        = useState({ flashcards: 0, quizzes: 0 });
+  const [abertos,       setAbertos]       = useState({});   // grupos expandidos/recolhidos pelo usuário
   const [dbUserId,      setDbUserId]      = useState(null);
   const [isLoading,     setIsLoading]     = useState(true);
   const [error,         setError]         = useState(null);
@@ -181,9 +196,9 @@ export default function FlashcardsQuizzesPage() {
   const [deleteTarget, setDeleteTarget] = useState(null); // { id, tipo, titulo }
   const [isDeleting,   setIsDeleting]   = useState(false);
 
-  /* ── Carrega listas + revisões ── */
-  const load = useCallback(async () => {
-    setIsLoading(true);
+  /* ── Carrega os lotes de flashcards e quizzes, com documento e contagem de vencidos ── */
+  const load = useCallback(async ({ silencioso = false } = {}) => {
+    if (!silencioso) setIsLoading(true);
     setError(null);
     try {
       const { token } = await getAuthHeaders();
@@ -191,44 +206,15 @@ export default function FlashcardsQuizzesPage() {
       if (!id) throw new Error('Perfil não encontrado. Faça login novamente.');
       setDbUserId(id);
 
-      const authHeader  = { Authorization: `Bearer ${token}` };
-      const xUserHeader = { ...authHeader, 'X-User-Id': id };
-
-      const [resDash, resRevFC, resRevQZ] = await Promise.all([
-        fetch(`${API_BASE}/profile/${id}/dashboard`,  { headers: xUserHeader }),
-        fetch(`${API_BASE}/revisoes/flashcards`,       { headers: xUserHeader }),
-        fetch(`${API_BASE}/revisoes/quizzes`,          { headers: xUserHeader }),
+      const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': id };
+      const [resFC, resQZ] = await Promise.all([
+        fetch(`${API_BASE}/revisoes/lotes?tipo=flashcards`, { headers }),
+        fetch(`${API_BASE}/revisoes/lotes?tipo=quizzes`,    { headers }),
       ]);
+      if (!resFC.ok || !resQZ.ok) throw new Error('Não foi possível carregar seus flashcards e quizzes.');
 
-      if (!resDash.ok) throw new Error(`Erro ${resDash.status} ao carregar dados.`);
-      const dash = await resDash.json();
-      setFlashcards(dash.ultimos_flashcards || []);
-      setQuizzes(dash.ultimos_quizzes       || []);
-      setTotals({
-        flashcards: dash.total_flashcards || 0,
-        quizzes:    dash.total_quizzes    || 0,
-      });
-
-      const today = new Date();
-      const due   = new Set();
-      const allRevCards = [];
-
-      if (resRevFC.ok) {
-        const items = await resRevFC.json();
-        items.forEach(r => {
-          allRevCards.push({ ...r, tipo: 'flashcard', conteudo: parseConteudo(r.conteudo) });
-          if (new Date(r.proxima_revisao) <= today) due.add(r.origem_id);
-        });
-      }
-      if (resRevQZ.ok) {
-        const items = await resRevQZ.json();
-        items.forEach(r => {
-          allRevCards.push({ ...r, tipo: 'quiz', conteudo: parseConteudo(r.conteudo) });
-          if (new Date(r.proxima_revisao) <= today) due.add(r.origem_id);
-        });
-      }
-      setDueIds(due);
-      setRevCards(allRevCards);
+      setFlashcards(await resFC.json());
+      setQuizzes(await resQZ.json());
     } catch (err) {
       setError(err.message);
     } finally {
@@ -277,28 +263,10 @@ export default function FlashcardsQuizzesPage() {
         throw new Error(data.detail || `Erro ${res.status} ao gerar.`);
       }
 
-      const created = await res.json();
-
-      // Adiciona imediatamente na lista sem esperar load()
-      const newItem = {
-        id:         created.id,
-        titulo:     created.titulo,
-        criado_em:  created.criado_em,
-      };
-
-      if (showModal === 'flashcard') {
-        setFlashcards(prev => [newItem, ...prev]);
-        setTotals(prev => ({ ...prev, flashcards: prev.flashcards + 1 }));
-        setActiveTab('flashcards');
-      } else {
-        setQuizzes(prev => [newItem, ...prev]);
-        setTotals(prev => ({ ...prev, quizzes: prev.quizzes + 1 }));
-        setActiveTab('quizzes');
-      }
-
+      setActiveTab(showModal === 'flashcard' ? 'flashcards' : 'quizzes');
       setShowModal(null);
-      // Recarrega em background para atualizar revisões
-      load();
+      // Recarrega em background para trazer o lote novo, já com o documento
+      load({ silencioso: true });
     } catch (err) {
       setModalError(err.message);
     } finally {
@@ -307,8 +275,10 @@ export default function FlashcardsQuizzesPage() {
   };
 
   /* ── Abre/fecha o modal de estudo (StudyModal cuida do proprio carregamento) ── */
-  const openStudy = (item, tipo) => setStudyItem({ ...item, tipo });
-  const closeStudy = () => setStudyItem(null);
+  // Atrasados estudam só os cartões vencidos; em dia, o lote inteiro para revisão
+  const openStudy = (lote, tipo, somenteVencidos) =>
+    setStudyItem({ ...lote, titulo: lote.documento_nome ?? lote.titulo, tipo, somenteVencidos });
+  const closeStudy = () => { setStudyItem(null); load({ silencioso: true }); };
 
   const closeModal = () => { if (!isCreating) setShowModal(null); };
 
@@ -329,10 +299,8 @@ export default function FlashcardsQuizzesPage() {
       if (!res.ok) throw new Error(`Erro ${res.status} ao excluir.`);
       if (deleteTarget.tipo === 'flashcard') {
         setFlashcards(prev => prev.filter(f => f.id !== deleteTarget.id));
-        setTotals(prev => ({ ...prev, flashcards: Math.max(0, prev.flashcards - 1) }));
       } else {
         setQuizzes(prev => prev.filter(q => q.id !== deleteTarget.id));
-        setTotals(prev => ({ ...prev, quizzes: Math.max(0, prev.quizzes - 1) }));
       }
       setDeleteTarget(null);
     } catch (err) {
@@ -343,8 +311,10 @@ export default function FlashcardsQuizzesPage() {
   };
 
   /* ── Dados da tab ativa ── */
-  const items    = activeTab === 'flashcards' ? flashcards : quizzes;
-  const dueCount = items.filter(i => dueIds.has(i.id)).length;
+  const items     = activeTab === 'flashcards' ? flashcards : quizzes;
+  const dueCount  = items.reduce((soma, lote) => soma + lote.itens_vencidos, 0);
+  const atrasados = items.filter(lote => lote.itens_vencidos > 0);
+  const emDia     = items.filter(lote => lote.itens_vencidos === 0);
 
   /* ══════════════════════════════════════════
      RENDER
@@ -391,7 +361,7 @@ export default function FlashcardsQuizzesPage() {
         >
           {Icon.flashcard}
           Flashcards
-          <span className="fq-tab__count">{totals.flashcards}</span>
+          <span className="fq-tab__count">{flashcards.length}</span>
         </button>
         <button
           role="tab"
@@ -401,7 +371,7 @@ export default function FlashcardsQuizzesPage() {
         >
           {Icon.quiz}
           Quizzes
-          <span className="fq-tab__count">{totals.quizzes}</span>
+          <span className="fq-tab__count">{quizzes.length}</span>
         </button>
       </div>
 
@@ -413,7 +383,7 @@ export default function FlashcardsQuizzesPage() {
       ) : error ? (
         <div className="fq-error">
           {error}
-          <button className="fq-error__retry" onClick={load}>Tentar novamente</button>
+          <button className="fq-error__retry" onClick={() => load()}>Tentar novamente</button>
         </div>
       ) : items.length === 0 ? (
         <div className="fq-empty">
@@ -427,36 +397,42 @@ export default function FlashcardsQuizzesPage() {
         </div>
       ) : (
         (() => {
-          const tipo = activeTab === 'flashcards' ? 'flashcard' : 'quiz';
-          const atrasados = items.filter(item => dueIds.has(item.id));
-          const emDia     = items.filter(item => !dueIds.has(item.id));
+          const tipo        = activeTab === 'flashcards' ? 'flashcard' : 'quiz';
+          const rotuloTipo  = activeTab === 'flashcards' ? 'Flashcards' : 'Quiz';
+          const rotuloItens = activeTab === 'flashcards' ? 'cards' : 'questões';
+          const rotuloLote  = (lote) => `${rotuloTipo} · ${lote.total_itens} ${rotuloItens}`;
 
-          const renderItem = (item, isDue) => (
+          const renderLote = (lote, atrasado) => (
             <li
-              key={item.id}
-              className={`fq-item${isDue ? ' fq-item--due' : ''}`}
+              key={lote.id}
+              className={`fq-item${atrasado ? ' fq-item--due' : ''}`}
             >
               <div className="fq-item__icon">
                 {activeTab === 'flashcards' ? Icon.flashcard : Icon.quiz}
               </div>
               <div className="fq-item__body">
-                <p className="fq-item__title">{item.titulo}</p>
+                <p className="fq-item__title">{rotuloLote(lote)}</p>
                 <p className="fq-item__meta">
-                  {Icon.clock} Criado em {formatDate(item.criado_em)}
+                  {Icon.clock} Criado em {formatDate(lote.criado_em)}
+                  {!atrasado && lote.proxima_revisao && (
+                    <> · Próxima revisão em {formatDate(lote.proxima_revisao)}</>
+                  )}
                 </p>
               </div>
               <div className="fq-item__right">
-                {isDue && <span className="fq-item__due-badge">Revisar hoje</span>}
+                {atrasado && (
+                  <span className="fq-item__due-badge">{lote.itens_vencidos} para revisar hoje</span>
+                )}
                 <button
                   className="fq-btn fq-btn--secondary fq-item__view-btn"
-                  onClick={() => openStudy(item, tipo)}
+                  onClick={() => openStudy(lote, tipo, atrasado)}
                 >
                   {Icon.play}
-                  Visualizar {activeTab === 'flashcards' ? 'Flashcard' : 'Quiz'}
+                  {atrasado ? 'Revisar agora' : 'Visualizar'}
                 </button>
                 <button
                   className="fq-item__delete-btn"
-                  onClick={() => setDeleteTarget({ id: item.id, tipo, titulo: item.titulo })}
+                  onClick={() => setDeleteTarget({ id: lote.id, tipo, titulo: rotuloLote(lote) })}
                   title="Excluir"
                 >
                   {Icon.trash}
@@ -464,6 +440,45 @@ export default function FlashcardsQuizzesPage() {
               </div>
             </li>
           );
+
+          const renderGrupos = (lotes, atrasado) => {
+            const secao  = atrasado ? 'atrasados' : 'em-dia';
+            const grupos = agruparPorDocumento(lotes);
+            return grupos.map(grupo => {
+              const key      = `${activeTab}:${secao}:${grupo.chave}`;
+              // Atrasados começam abertos; em dia começa aberto só se houver poucos documentos
+              const aberto   = abertos[key] ?? (atrasado || grupos.length <= 3);
+              const contagem = atrasado
+                ? `${grupo.lotes.reduce((soma, l) => soma + l.itens_vencidos, 0)} para revisar`
+                : `${grupo.lotes.length} ${grupo.lotes.length === 1 ? 'lote' : 'lotes'}`;
+              return (
+                <li key={key} className="fq-group">
+                  <button
+                    type="button"
+                    className="fq-group__header"
+                    aria-expanded={aberto}
+                    onClick={() => setAbertos(prev => ({ ...prev, [key]: !aberto }))}
+                  >
+                    <span className={`fq-group__chevron${aberto ? ' fq-group__chevron--open' : ''}`}>
+                      {Icon.arrowRight}
+                    </span>
+                    <span className="fq-group__text">
+                      <span className="fq-group__name">{grupo.nome}</span>
+                      {grupo.pasta && (
+                        <span className="fq-group__folder">{Icon.folder} {grupo.pasta}</span>
+                      )}
+                    </span>
+                    <span className="fq-group__count">{contagem}</span>
+                  </button>
+                  {aberto && (
+                    <ul className="fq-list fq-group__list">
+                      {grupo.lotes.map(lote => renderLote(lote, atrasado))}
+                    </ul>
+                  )}
+                </li>
+              );
+            });
+          };
 
           return (
             <div className="fq-lists">
@@ -474,9 +489,7 @@ export default function FlashcardsQuizzesPage() {
                 {atrasados.length === 0 ? (
                   <p className="fq-list-section__empty">Nada atrasado por aqui — bom trabalho!</p>
                 ) : (
-                  <ul className="fq-list fq-list--scroll">
-                    {atrasados.map(item => renderItem(item, true))}
-                  </ul>
+                  <ul className="fq-list">{renderGrupos(atrasados, true)}</ul>
                 )}
               </section>
 
@@ -487,9 +500,7 @@ export default function FlashcardsQuizzesPage() {
                 {emDia.length === 0 ? (
                   <p className="fq-list-section__empty">Nenhum item em dia no momento.</p>
                 ) : (
-                  <ul className="fq-list fq-list--scroll">
-                    {emDia.map(item => renderItem(item, false))}
-                  </ul>
+                  <ul className="fq-list">{renderGrupos(emDia, false)}</ul>
                 )}
               </section>
             </div>
@@ -642,7 +653,12 @@ export default function FlashcardsQuizzesPage() {
           MODAL — Estudo
       ══════════════════════════════════════════ */}
       {studyItem && (
-        <StudyModal item={studyItem} tipo={studyItem.tipo} onClose={closeStudy} />
+        <StudyModal
+          item={studyItem}
+          tipo={studyItem.tipo}
+          somenteVencidos={studyItem.somenteVencidos}
+          onClose={closeStudy}
+        />
       )}
 
 

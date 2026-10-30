@@ -76,7 +76,7 @@ function mesmaAlternativa(a, b) {
  * quizzes (responder + resultado final com detalhe por questão).
  * Usado tanto na Revisão Geral quanto no Document Hub.
  */
-export default function StudyModal({ item, tipo, onClose }) {
+export default function StudyModal({ item, tipo, somenteVencidos = false, onClose }) {
   const isFlashcard = tipo === 'flashcard';
 
   const [cards,          setCards]          = useState([]);
@@ -97,9 +97,10 @@ export default function StudyModal({ item, tipo, onClose }) {
         const { token } = await getAuthHeaders();
         const id = await getDbUserId(token);
         const headers = { Authorization: `Bearer ${token}`, 'X-User-Id': id };
+        const filtro = somenteVencidos ? '?somente_vencidos=true' : '';
         const endpoint = isFlashcard
-          ? `${API_BASE}/flashcards/${item.id}/conteudo`
-          : `${API_BASE}/quizzes/${item.id}/conteudo`;
+          ? `${API_BASE}/flashcards/${item.id}/conteudo${filtro}`
+          : `${API_BASE}/quizzes/${item.id}/conteudo${filtro}`;
         const res = await fetch(endpoint, { headers });
         if (!res.ok) throw new Error(`Erro ${res.status} ao carregar conteúdo.`);
         const data = await res.json();
@@ -113,7 +114,7 @@ export default function StudyModal({ item, tipo, onClose }) {
       }
     })();
     return () => { cancelled = true; };
-  }, [item.id, isFlashcard]);
+  }, [item.id, isFlashcard, somenteVencidos]);
 
   const currentCard = cards[cardIndex];
   const verifiedIndex = answersMap[cardIndex]; // undefined = ainda não verificada nesta questão
