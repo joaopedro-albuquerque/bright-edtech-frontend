@@ -208,7 +208,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onCloseMobile
           {!collapsed && (
             <button
               className={`sidebar__logout-btn${loggingOut ? ' sidebar__logout-btn--loading' : ''}`}
-              onClick={handleLogout}
+              onClick={(e) => { e.stopPropagation(); handleLogout(); }}
               disabled={loggingOut}
               aria-label="Sair da conta"
               title="Sair"

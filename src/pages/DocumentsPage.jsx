@@ -648,7 +648,9 @@ export default function DocumentsPage() {
     setContentModalError('');
     try {
       const created = await gerarItens(file, tipo);
-      setContentModalItems(prev => [created, ...prev]);
+      closeContentModal();
+      const tipoEstudo = tipo === 'flashcards' ? 'flashcard' : 'quiz';
+      setStudyItem({ id: created.id, titulo: created.titulo, tipo: tipoEstudo });
     } catch (err) {
       setContentModalError(err.message);
     } finally {
@@ -679,9 +681,10 @@ export default function DocumentsPage() {
     setIsQuickGenerating(true);
     setErroGeracao('');
     try {
-      await gerarItens(file, tipo);
+      const created = await gerarItens(file, tipo);
       setAlvoGeracao(null);
-      openContentModal(file, tipo);
+      const tipoEstudo = tipo === 'flashcards' ? 'flashcard' : 'quiz';
+      setStudyItem({ id: created.id, titulo: created.titulo, tipo: tipoEstudo });
     } catch (err) {
       setErroGeracao(err.message);
     } finally {
@@ -1126,64 +1129,68 @@ export default function DocumentsPage() {
 
                   {/* Botões de ação */}
                   <div className="dp-file-item__actions">
-                    {/* Botão IA — gerar resumo */}
-                    <button
-                      className="dp-file-item__ai-btn"
-                      data-tour={isFirstFile ? 'dp-file-ai' : undefined}
-                      onClick={() => { setNewSummaryTarget(file); setNewSummaryFormat('cornell'); }}
-                      disabled={isGenerating}
-                      title="Gerar novo resumo com IA"
-                    >
-                      {isThisGenerating ? Icon.spinner : Icon.ai}
-                    </button>
+                    <div className="dp-file-item__actions-top">
+                      {/* Botão IA — gerar resumo */}
+                      <button
+                        className="dp-file-item__ai-btn"
+                        data-tour={isFirstFile ? 'dp-file-ai' : undefined}
+                        onClick={() => { setNewSummaryTarget(file); setNewSummaryFormat('cornell'); }}
+                        disabled={isGenerating}
+                        title="Gerar novo resumo com IA"
+                      >
+                        {isThisGenerating ? Icon.spinner : Icon.ai}
+                      </button>
 
-                    {/* Badges de contagem (clicáveis) */}
-                    <div
-                      className="dp-file-item__counts"
-                      data-tour={isFirstFile ? 'dp-file-counts' : undefined}
-                    >
-                      <button
-                        type="button"
-                        className="dp-file-item__count dp-file-item__count--resumos"
-                        onClick={() => openContentModal(file, 'resumos')}
+                      {/* Badges de contagem (clicáveis) */}
+                      <div
+                        className="dp-file-item__counts"
+                        data-tour={isFirstFile ? 'dp-file-counts' : undefined}
                       >
-                        {counts.resumos} {counts.resumos === 1 ? CONTENT_LABELS.resumos.singular : CONTENT_LABELS.resumos.plural}
-                      </button>
-                      <button
-                        type="button"
-                        className="dp-file-item__count dp-file-item__count--flashcards"
-                        onClick={() => openContentModal(file, 'flashcards')}
-                      >
-                        {counts.flashcards} {counts.flashcards === 1 ? CONTENT_LABELS.flashcards.singular : CONTENT_LABELS.flashcards.plural}
-                      </button>
-                      <button
-                        type="button"
-                        className="dp-file-item__count dp-file-item__count--quizzes"
-                        onClick={() => openContentModal(file, 'quizzes')}
-                      >
-                        {counts.quizzes} {counts.quizzes === 1 ? CONTENT_LABELS.quizzes.singular : CONTENT_LABELS.quizzes.plural}
-                      </button>
+                        <button
+                          type="button"
+                          className="dp-file-item__count dp-file-item__count--resumos"
+                          onClick={() => openContentModal(file, 'resumos')}
+                        >
+                          {counts.resumos} {counts.resumos === 1 ? CONTENT_LABELS.resumos.singular : CONTENT_LABELS.resumos.plural}
+                        </button>
+                        <button
+                          type="button"
+                          className="dp-file-item__count dp-file-item__count--flashcards"
+                          onClick={() => openContentModal(file, 'flashcards')}
+                        >
+                          {counts.flashcards} {counts.flashcards === 1 ? CONTENT_LABELS.flashcards.singular : CONTENT_LABELS.flashcards.plural}
+                        </button>
+                        <button
+                          type="button"
+                          className="dp-file-item__count dp-file-item__count--quizzes"
+                          onClick={() => openContentModal(file, 'quizzes')}
+                        >
+                          {counts.quizzes} {counts.quizzes === 1 ? CONTENT_LABELS.quizzes.singular : CONTENT_LABELS.quizzes.plural}
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Editar nome */}
-                    <button
-                      className="dp-file-item__icon-btn"
-                      onClick={() => { setRenameFileTarget({ id: file.id, nome: displayName }); setRenameFileName(displayName); }}
-                      title="Renomear documento"
-                      disabled={isGenerating}
-                    >
-                      {Icon.edit}
-                    </button>
+                    <div className="dp-file-item__actions-bottom">
+                      {/* Editar nome */}
+                      <button
+                        className="dp-file-item__icon-btn"
+                        onClick={() => { setRenameFileTarget({ id: file.id, nome: displayName }); setRenameFileName(displayName); }}
+                        title="Renomear documento"
+                        disabled={isGenerating}
+                      >
+                        {Icon.edit}
+                      </button>
 
-                    {/* Excluir */}
-                    <button
-                      className="dp-file-item__icon-btn dp-file-item__icon-btn--danger"
-                      onClick={() => setDeleteFileTarget({ id: file.id, nome: displayName })}
-                      title="Excluir documento"
-                      disabled={isGenerating}
-                    >
-                      {Icon.trash}
-                    </button>
+                      {/* Excluir */}
+                      <button
+                        className="dp-file-item__icon-btn dp-file-item__icon-btn--danger"
+                        onClick={() => setDeleteFileTarget({ id: file.id, nome: displayName })}
+                        title="Excluir documento"
+                        disabled={isGenerating}
+                      >
+                        {Icon.trash}
+                      </button>
+                    </div>
                   </div>
                 </li>
               );

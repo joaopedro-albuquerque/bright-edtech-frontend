@@ -263,9 +263,10 @@ export default function FlashcardsQuizzesPage() {
         throw new Error(data.detail || `Erro ${res.status} ao gerar.`);
       }
 
+      const created = await res.json();
       setActiveTab(showModal === 'flashcard' ? 'flashcards' : 'quizzes');
       setShowModal(null);
-      // Recarrega em background para trazer o lote novo, já com o documento
+      setStudyItem({ id: created.id, titulo: created.titulo, tipo: showModal });
       load({ silencioso: true });
     } catch (err) {
       setModalError(err.message);
