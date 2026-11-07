@@ -43,7 +43,7 @@ jobs:
 
       - name: Sincronizar dist/ com o S3
         run: |
-          aws s3 sync ./dist "s3://$S3_BUCKET" --delete
+          aws s3 sync ./dist "s3://$S3_BUCKET" --delete --exclude "videos/*"
 
       - name: Invalidar cache do CloudFront
         run: |
