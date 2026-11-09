@@ -7,7 +7,8 @@ export default function Method() {
       <div className="method__container">
         <p className="method__eyebrow">Base científica</p>
         <h2 className="method__title">
-          <span className="method__title-accent">É método comprovado.</span>
+          Repetição espaçada:<br />
+          <span className="method__title-accent">um método comprovado.</span>
         </h2>
         <p className="method__description">
           A Bright é construída em cima da <strong>repetição espaçada</strong>, uma das
