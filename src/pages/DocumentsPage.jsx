@@ -1508,7 +1508,7 @@ export default function DocumentsPage() {
           <div className="dp-modal dp-modal--content-list">
             <div className="dp-modal__header">
               <h2 className="dp-modal__title">
-                {CONTENT_LABELS[contentModal.tipo].plural} — {contentModal.file.nome_documento ?? contentModal.file.nome}
+                {CONTENT_LABELS[contentModal.tipo].plural}: {contentModal.file.nome_documento ?? contentModal.file.nome}
               </h2>
               <button className="dp-modal__close" onClick={closeContentModal} aria-label="Fechar">✕</button>
             </div>

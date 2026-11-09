@@ -14,7 +14,7 @@ export default function AIDisclaimerBanner({ className = '' }) {
         <circle cx="8" cy="11" r="0.8" fill="currentColor" />
       </svg>
       <span>
-        Conteúdo gerado por inteligência artificial — pode conter imprecisões.
+        Conteúdo gerado por inteligência artificial. Pode conter imprecisões.
         Confira sempre com o material original antes de usar como única fonte de estudo.
       </span>
     </div>

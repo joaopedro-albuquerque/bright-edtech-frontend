@@ -83,7 +83,7 @@ const Icon = {
 
 /** Formata ISO → DD/MM/AAAA */
 function formatDate(iso) {
-  if (!iso) return '—';
+  if (!iso) return 'Sem data';
   try {
     return new Date(iso).toLocaleDateString('pt-BR', {
       day: '2-digit', month: '2-digit', year: 'numeric',

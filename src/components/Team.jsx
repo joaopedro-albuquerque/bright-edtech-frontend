@@ -22,7 +22,7 @@ export default function Team() {
         </h2>
         <p className="team__mission">
           Somos quatro estudantes de Análise e Desenvolvimento de Sistemas e a Bright
-          nasceu como nosso trabalho de conclusão de curso — mas a motivação vem de
+          nasceu como nosso trabalho de conclusão de curso, mas a motivação vem de
           um problema bem real que a gente vive na pele. Levantamos dados com outros
           universitários e o retrato foi claro: metade nem conhece o método de
           repetição espaçada, e boa parte de quem conhece não consegue manter a
@@ -30,7 +30,7 @@ export default function Team() {
           tempo perdido procurando material espalhado em pastas e apps diferentes, e
           fica óbvio o tamanho do problema. Foi por isso que construímos a Bright: uma
           plataforma leve, com interface amigável, que usa IA pra transformar qualquer
-          material em resumo e flashcard prontos pra revisão — sem fricção e sem curva
+          material em resumo e flashcard prontos pra revisão, sem fricção e sem curva
           de aprendizado.
         </p>
         <div className="team__grid">

@@ -1,5 +1,5 @@
 .techstack {
-  background: #f7f9fc;
+  background: #ffffff;
   padding: 7rem 2rem;
 }
 
@@ -54,7 +54,7 @@
 }
 
 .techstack__item {
-  background: #ffffff;
+  background: #f7f9fc;
   border: 1px solid rgba(74, 144, 217, 0.12);
   border-radius: 16px;
   padding: 1.5rem 1rem;

@@ -150,7 +150,7 @@ function agruparPorDocumento(lotes) {
 }
 
 function formatDate(iso) {
-  if (!iso) return '—';
+  if (!iso) return 'Sem data';
   return new Date(iso).toLocaleDateString('pt-BR', {
     day: '2-digit', month: '2-digit', year: 'numeric',
   });
@@ -488,7 +488,7 @@ export default function FlashcardsQuizzesPage() {
                   Atrasados <span className="fq-list-section__count">{atrasados.length}</span>
                 </h2>
                 {atrasados.length === 0 ? (
-                  <p className="fq-list-section__empty">Nada atrasado por aqui — bom trabalho!</p>
+                  <p className="fq-list-section__empty">Nada atrasado por aqui. Bom trabalho!</p>
                 ) : (
                   <ul className="fq-list">{renderGrupos(atrasados, true)}</ul>
                 )}

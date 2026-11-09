@@ -7,14 +7,13 @@ export default function Method() {
       <div className="method__container">
         <p className="method__eyebrow">Base científica</p>
         <h2 className="method__title">
-          Não é só IA bonitinha.<br />
           <span className="method__title-accent">É método comprovado.</span>
         </h2>
         <p className="method__description">
           A Bright é construída em cima da <strong>repetição espaçada</strong>, uma das
           técnicas mais estudadas pela psicologia cognitiva pra vencer a curva do
           esquecimento. Em vez de reler tudo de uma vez, cada flashcard volta pra você
-          no momento certo — mais perto quando você acabou de aprender, cada vez mais
+          no momento certo: mais perto quando você acabou de aprender, cada vez mais
           espaçado conforme você domina o conteúdo. É o mesmo princípio por trás de
           apps como Anki, só que aqui os cartões são gerados automaticamente a partir
           dos seus próprios materiais.

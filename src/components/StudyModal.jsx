@@ -202,7 +202,7 @@ export default function StudyModal({ item, tipo, somenteVencidos = false, onClos
                         <p className="fq-quiz-summary__question">{i + 1}. {card.conteudo?.pergunta}</p>
                         {!acertou && (
                           <p className="fq-quiz-summary__answer">
-                            Sua resposta: {escolhida ?? '(não respondida)'} — Correta: <strong>{correta}</strong>
+                            Sua resposta: {escolhida ?? '(não respondida)'}. Correta: <strong>{correta}</strong>
                           </p>
                         )}
                       </div>

@@ -46,7 +46,7 @@ export default function TermsModal({ onClose }) {
               Você é o único responsável pelo conteúdo dos documentos que envia para a
               plataforma e declara possuir os direitos necessários sobre esse material
               (seja por ser o autor original, ou por possuir licença/autorização de uso).
-              A Bright EdTech não reivindica propriedade sobre o conteúdo enviado — ele é
+              A Bright EdTech não reivindica propriedade sobre o conteúdo enviado. Ele é
               utilizado apenas para gerar os materiais de estudo solicitados por você.
             </p>
           </section>

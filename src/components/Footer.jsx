@@ -29,7 +29,7 @@ export default function Footer() {
             Transformando materiais brutos em inteligência acadêmica. O ecossistema completo para o estudante moderno.
           </p>
           <p className="footer__dev-note">
-            Projeto desenvolvido para fins acadêmicos – Sistemas de Análise e Desenvolvimento.
+            Projeto desenvolvido para fins acadêmicos no curso de Análise e Desenvolvimento de Sistemas.
           </p>
         </div>
         <nav className="footer__nav" aria-label="Navegação do rodapé">
