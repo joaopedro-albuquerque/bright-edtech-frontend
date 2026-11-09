@@ -21,7 +21,8 @@ export default function Team() {
           <span className="team__title-accent">vive a rotina de estudar.</span>
         </h2>
         <p className="team__mission">
-          Somos quatro estudantes de Análise e Desenvolvimento de Sistemas e a Bright
+          Somos quatro estudantes de Análise e Desenvolvimento de Sistemas do Instituto
+          Federal de Educação, Ciência e Tecnologia de São Paulo (IFSP), e a Bright
           nasceu como nosso trabalho de conclusão de curso, mas a motivação vem de
           um problema bem real que a gente vive na pele. Levantamos dados com outros
           universitários e o retrato foi claro: metade nem conhece o método de
